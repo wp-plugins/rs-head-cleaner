@@ -1,7 +1,7 @@
 === RS Head Cleaner Plus ===
 Contributors: RedSand
 Donate link: http://www.redsandmarketing.com/rs-head-cleaner-donate/
-Tags: head, head-cleaner, clean, cleaner, javascript, footer, generator, more, security, seo
+Tags: head, head-cleaner, clean, cleaner, javascript, footer, generator, more, security, seo, css
 Requires at least: 2.8
 Tested up to: 3.9
 Stable tag: trunk
@@ -10,11 +10,12 @@ This plugin cleans up a number of issues, improving speed, efficiency, SEO, and 
 
 == Description == 
 
-This plugin cleans up a number of issues, doing the work of 4 plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the Generator/WordPress Version number, and  fixes the "Read more" link so it displays the entire post.
+This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the Generator/WordPress Version number, removes version numbers from CSS and JS links, and  fixes the "Read more" link so it displays the entire post.
 
 = Features =
 
 * **Removes the Generator/WordPress Version number** from the HEAD section for security reasons. You don't want your WordPress version being visible because hackers can use it to attack your site. Even if you keep your site up to date, it still could be vulnerable to zero-day exploits.
+* **Removes Version numbers from CSS and JS** in the HEAD for the same security reasons you hide WordPress version. Will also improve site loading speed because removing version numbers from the CSS & JS links will allow browsers to properly cache these files, as well as helping your site code to validate.
 * **Removes junk WordPress code** from the HEAD of your site: **RSD link**, **Windows Live Writer Manifest link**, **WordPress Shortlinks** (also removed from HTTP Headers), **Adjacent Posts links (REL = PREV/NEXT)** as all are unnecessary, hurt your SEO and clutter your site code.
 * **Moves JavaScripts from the HEAD to the footer** section of your site for major speed improvements in page loading.
 * **Fixes the "Read more"** link so it displays the entire post when you click, not just the part after the "#more".
@@ -32,7 +33,8 @@ For more info and full documentation, visit the [RS Head Cleaner Plus homepage](
 3. You are good to go...it's that easy. 
 
 == Changelog ==
-No changes yet.
+
+Version 1.1.0.0, released 03/26/14 – Added feature to remove version numbers from CSS and JS links in the HEAD.
 
 == Frequently Asked Questions ==
 

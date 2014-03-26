@@ -4,7 +4,7 @@ Plugin Name: RS Head Cleaner Plus
 Plugin URI: http://www.redsandmarketing.com/plugins/rs-head-cleaner/
 Description: This plugin does the work of 4 plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the WP Version, and  fixes the "Read more" link so it displays the entire post.
 Author: Scott Allen
-Version: 1.0.0.1
+Version: 1.1.0.0
 Author URI: http://www.redsandmarketing.com/
 License: GPLv2
 */
@@ -33,15 +33,16 @@ License: GPLv2
 My use of the end curly braces "}" is a little funky in that I indent them, I know. IMO it's easier to debug. Just know that it's on purpose even though it's not standard. One of my programming quirks, and just how I roll. :)
 */
 
-define( 'RSHCP_VERSION', '1.0.0.1' );
+define( 'RSHCP_VERSION', '1.1.0.0' );
 define( 'RSHCP_REQUIRED_WP_VERSION', '2.8' );
 
 
 // Adds features, cleans up WP code, and eliminates need for multiple plugins
-	// - Hide WP Generator 		- Security
-	// - JavaScript to Footer 	- For Speed in page loading
-	// - Fixes "More" link		- Fixes "More" link so you see the whole post when you click, not just the part after the "more"
-	// - Head Cleaner			- Removes the following from the head section for SEO and speed: RSD Link, Windows Live Writer Manifest Link, WordPress Shortlinks, and Adjacent Posts links (Prev/Next)
+	// - Hide WP Generator 			- Security
+	// - Removes CSS/JS Versions 	- Security, Speed, Code Validation
+	// - JavaScript to Footer 		- For Speed in page loading
+	// - Fixes "More" link			- Fixes "More" link so you see the whole post when you click, not just the part after the "more"
+	// - Head Cleaner				- Removes the following from the head section for SEO and speed: RSD Link, Windows Live Writer Manifest Link, WordPress Shortlinks, and Adjacent Posts links (Prev/Next)
 
 
 // CLEANUP HEADER CODE - BEGIN
@@ -65,6 +66,17 @@ remove_action( 'wp_head', 'adjacent_posts_rel_link_wp_head', 10, 0 );
 
 remove_action('wp_head', 'wp_generator');
 	// Remove WP Generator/Version - for security reasons
+
+// Remove version numbers from CSS and JS in HEAD
+function rs_remove_wp_ver_css_js( $src ) {
+	if ( strpos( $src, 'ver=' ) ) {
+		$src = remove_query_arg( 'ver', $src );
+		}
+	return $src;
+	}
+
+add_filter( 'style_loader_src', 'rs_remove_wp_ver_css_js', 9999 );
+add_filter( 'script_loader_src', 'rs_remove_wp_ver_css_js', 9999 );
 
 // CLEANUP HEADER CODE - END
 
