@@ -6,7 +6,7 @@ Requires at least: 3.0
 Tested up to: 3.9
 Stable tag: trunk
 
-This plugin cleans up a number of issues, improving speed, efficiency, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the WP Version, and  fixes the "Read more" link so it displays the entire post.
+This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. 
 
 == Description == 
 
