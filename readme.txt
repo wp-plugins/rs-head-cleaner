@@ -22,15 +22,15 @@ This plugin cleans up a number of issues, doing the work of multiple plugins, im
 
 For a more thorough explanation of what the plugin does and why you need it, visit the [RS Head Cleaner Plus plugin homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/ "RS Head Cleaner Plus Plugin").
 
-= More Info / Documentation =
-For more info and full documentation, visit the [RS Head Cleaner Plus homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/).
-
 == Installation ==
 
 = Installation Instructions =
 1. After downloading, unzip file and upload the enclosed `rs-head-cleaner` directory to your WordPress plugins directory: `/wp-content/plugins/`.
 2. As always, **activate** the plugin on your WordPress plugins page.
-3. You are good to go...it's that easy. 
+3. You are good to go...it's that easy.
+
+= More Info / Documentation =
+For more info and full documentation, visit the [RS Head Cleaner Plus homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/).
 
 == Changelog ==
 
