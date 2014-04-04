@@ -34,10 +34,12 @@ For more info and full documentation, visit the [RS Head Cleaner Plus homepage](
 
 == Changelog ==
 
-Version 1.1.0.1, *released 04/04/14*
+Version 1.1.0.1, *released 04/04/14* 
+
 * Minor code improvements.
 
-Version 1.1.0.0, *released 03/26/14*
+Version 1.1.0.0, *released 03/26/14* 
+
 * Added feature to remove version numbers from CSS and JS links in the HEAD.
 
 == Frequently Asked Questions ==
