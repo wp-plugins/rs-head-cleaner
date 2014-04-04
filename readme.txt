@@ -1,8 +1,8 @@
 === RS Head Cleaner Plus ===
 Contributors: RedSand
 Donate link: http://www.redsandmarketing.com/rs-head-cleaner-donate/
-Tags: head, head-cleaner, clean, cleaner, javascript, footer, generator, more, security, seo, css
-Requires at least: 2.8
+Tags: clean, cleaner, css, footer, generator, head, head-cleaner, javascript, more, security, seo
+Requires at least: 3.0
 Tested up to: 3.9
 Stable tag: trunk
 
@@ -10,7 +10,7 @@ This plugin cleans up a number of issues, improving speed, efficiency, SEO, and 
 
 == Description == 
 
-This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the Generator/WordPress Version number, removes version numbers from CSS and JS links, and  fixes the "Read more" link so it displays the entire post.
+This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the Generator/WordPress Version number, removes version numbers from CSS and JS links, and fixes the "Read more" link so it displays the entire post.
 
 = Features =
 
@@ -34,7 +34,11 @@ For more info and full documentation, visit the [RS Head Cleaner Plus homepage](
 
 == Changelog ==
 
-Version 1.1.0.0, released 03/26/14 - Added feature to remove version numbers from CSS and JS links in the HEAD.
+Version 1.1.0.1, *released 04/04/14*
+* Minor code improvements.
+
+Version 1.1.0.0, *released 03/26/14*
+* Added feature to remove version numbers from CSS and JS links in the HEAD.
 
 == Frequently Asked Questions ==
 

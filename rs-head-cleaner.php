@@ -2,9 +2,9 @@
 /*
 Plugin Name: RS Head Cleaner Plus
 Plugin URI: http://www.redsandmarketing.com/plugins/rs-head-cleaner/
-Description: This plugin does the work of 4 plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the WP Version, and  fixes the "Read more" link so it displays the entire post.
+Description: This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the WP Version, removes version numbers from CSS and JS links, and fixes the "Read more" link so it displays the entire post.
 Author: Scott Allen
-Version: 1.1.0.0
+Version: 1.1.0.1
 Author URI: http://www.redsandmarketing.com/
 License: GPLv2
 */
@@ -33,9 +33,8 @@ License: GPLv2
 My use of the end curly braces "}" is a little funky in that I indent them, I know. IMO it's easier to debug. Just know that it's on purpose even though it's not standard. One of my programming quirks, and just how I roll. :)
 */
 
-define( 'RSHCP_VERSION', '1.1.0.0' );
-define( 'RSHCP_REQUIRED_WP_VERSION', '2.8' );
-
+define( 'RSHCP_VERSION', '1.1.0.1' );
+define( 'RSHCP_REQUIRED_WP_VERSION', '3.0' );
 
 // Adds features, cleans up WP code, and eliminates need for multiple plugins
 	// - Hide WP Generator 			- Security
@@ -44,9 +43,7 @@ define( 'RSHCP_REQUIRED_WP_VERSION', '2.8' );
 	// - Fixes "More" link			- Fixes "More" link so you see the whole post when you click, not just the part after the "more"
 	// - Head Cleaner				- Removes the following from the head section for SEO and speed: RSD Link, Windows Live Writer Manifest Link, WordPress Shortlinks, and Adjacent Posts links (Prev/Next)
 
-
 // CLEANUP HEADER CODE - BEGIN
-
 remove_action ('wp_head', 'rsd_link');
 	// Remove RSD Link - If you edit blog through browser, then it is not needed.
 	
@@ -77,25 +74,19 @@ function rs_remove_wp_ver_css_js( $src ) {
 
 add_filter( 'style_loader_src', 'rs_remove_wp_ver_css_js', 9999 );
 add_filter( 'script_loader_src', 'rs_remove_wp_ver_css_js', 9999 );
-
 // CLEANUP HEADER CODE - END
 
-
 // IMPROVE USER EXPERIENCE - BEGIN
-
-// Change the (more...) link so it displays the entire post, not just the part after the "more"
+// Change the "Read more" link so it displays the entire post, not just the part after the "#more"
 function rs_remove_more($content) {
 	global $id;
 	return str_replace('#more-'.$id.'"', '"', $content);
 	}
 
 add_filter('the_content', 'rs_remove_more');
-
 // IMPROVE USER EXPERIENCE - END
 
-
 // SPEED UP WORDPRESS - BEGIN
-
 // Moves JavaScripts from Header to Footer to Speed Page Loading
 remove_action('wp_head', 'wp_print_scripts');
 remove_action('wp_head', 'wp_print_head_scripts', 9);
@@ -103,9 +94,7 @@ remove_action('wp_head', 'wp_enqueue_scripts', 1);
 add_action('wp_footer', 'wp_print_scripts', 5);
 add_action('wp_footer', 'wp_enqueue_scripts', 5);
 add_action('wp_footer', 'wp_print_head_scripts', 5);
-
 // SPEED UP WORDPRESS - END
-
 
 // PLUGIN - END
 ?>
