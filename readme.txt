@@ -20,6 +20,8 @@ This plugin cleans up a number of issues, doing the work of multiple plugins, im
 * **Moves JavaScripts from the HEAD to the footer** section of your site for major speed improvements in page loading.
 * **Fixes the "Read more"** link so it displays the entire post when you click, not just the part after the "#more".
 
+If you don't want the JavaScript to Footer feature, use [RS Head Cleaner Lite](https://wordpress.org/plugins/rs-head-cleaner-lite/ "RS Head Cleaner Lite") instead.
+
 For a more thorough explanation of what the plugin does and why you need it, visit the [RS Head Cleaner Plus plugin homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/ "RS Head Cleaner Plus Plugin").
 
 == Installation ==
@@ -55,6 +57,8 @@ Just one that I know of.
 Moving JavaScript to the footer of your page may create issues with some responsive themes that need the JS libraries to be in the head section of the code. If that's the case then this plugin may not be right for you. Even for me, it's right for 80% of my sites but not all of them. For the rest I put everything but the JavaScript-to-Footer code in the functions.php file of the theme to get similar functionality.
 
 Test this plugin out on your site before deciding if it will be the right solution for you. Normally I would create an options page to let you turn the JS-to-Footer feature off, but this plugin is all about speeding up your site, and that means minimal calls to the database, so unfortunately it would defeat the purpose of this plugin if I added the ability to change that.
+
+If you don't want the JS to Footer feature, use [RS Head Cleaner Lite](https://wordpress.org/plugins/rs-head-cleaner-lite/ "RS Head Cleaner Lite"). It has all the same features except it won't move JavaScript to the footer.
 
 = You do great work...can I hire you? =
 
