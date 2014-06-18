@@ -4,7 +4,7 @@ Plugin Name: RS Head Cleaner Plus
 Plugin URI: http://www.redsandmarketing.com/plugins/rs-head-cleaner/
 Description: This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the WP Version, removes version numbers from CSS and JS links, and fixes the "Read more" link so it displays the entire post.
 Author: Scott Allen
-Version: 1.1.0.3
+Version: 1.1.1
 Author URI: http://www.redsandmarketing.com/
 License: GPLv2
 */
@@ -41,14 +41,18 @@ if ( !function_exists( 'add_action' ) ) {
 	die('ERROR: This plugin requires WordPress and will not function if called directly.');
 	}
 
-define( 'RSHCP_VERSION', '1.1.0.3' );
+define( 'RSHCP_VERSION', '1.1.1' );
 define( 'RSHCP_REQUIRED_WP_VERSION', '3.0' );
+
+if ( !defined( 'RSHCP_REMOVE_OPEN_SANS' ) ) { define( 'RSHCP_REMOVE_OPEN_SANS', false ); } // Change in wp-config.php
+// By default this feature is off, but if you don't need Open Sans and you want a faster site, add a line in your wp-config.php that says: "define( 'RSHCP_REMOVE_OPEN_SANS', true );"
 
 // Adds features, cleans up WP code, and eliminates need for multiple plugins
 	// - Hide WP Generator 			- Security
 	// - Removes CSS/JS Versions 	- Security, Speed, Code Validation
 	// - JavaScript to Footer 		- For Speed in page loading
 	// - Fixes "More" link			- Fixes "More" link so you see the whole post when you click, not just the part after the "more"
+	// - Removes Open Sans			- Removes the Open Sans from WordPress to speed up your site by removing the call to Google Fonts Library
 	// - Head Cleaner				- Removes the following from the head section for SEO and speed: RSD Link, Windows Live Writer Manifest Link, WordPress Shortlinks, and Adjacent Posts links (Prev/Next)
 
 // CLEANUP HEADER CODE - BEGIN
@@ -102,6 +106,15 @@ remove_action('wp_head', 'wp_enqueue_scripts', 1);
 add_action('wp_footer', 'wp_print_scripts', 5);
 add_action('wp_footer', 'wp_enqueue_scripts', 5);
 add_action('wp_footer', 'wp_print_head_scripts', 5);
+//Remove Open Sans to Speed Page Loading
+function rs_remove_opensans() {
+    wp_deregister_style( 'open-sans' );
+    wp_register_style( 'open-sans', false );
+    wp_enqueue_style( 'open-sans', '' );
+	}
+if ( RSHCP_REMOVE_OPEN_SANS != false ) {
+	add_action( 'init', 'rs_remove_opensans', 9999 );
+	}
 // SPEED UP WORDPRESS - END
 
 // PLUGIN - END

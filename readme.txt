@@ -36,6 +36,10 @@ For more info and full documentation, visit the [RS Head Cleaner Plus homepage](
 
 == Changelog ==
 
+Version 1.1.1, *released 06/17/14*
+
+* Updated some features.
+
 Version 1.1.0.3, *released 04/28/14*
 
 * Fixed a bug that caused an error message on certain server configurations.
