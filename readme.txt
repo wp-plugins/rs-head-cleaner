@@ -1,8 +1,8 @@
 === RS Head Cleaner Plus ===
 Contributors: RedSand
 Donate link: http://www.redsandmarketing.com/rs-head-cleaner-donate/
-Tags: clean, cleaner, css, footer, generator, head, head-cleaner, javascript, more, security, seo
-Requires at least: 3.0
+Tags: cache, clean, cleaner, css, footer, generator, head, head-cleaner, javascript, more, minify, security, seo
+Requires at least: 3.6
 Tested up to: 3.9
 Stable tag: trunk
 
@@ -10,19 +10,22 @@ This plugin cleans up a number of issues, doing the work of multiple plugins, im
 
 == Description == 
 
-This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, hides the Generator/WordPress Version number, removes version numbers from CSS and JS links, and fixes the "Read more" link so it displays the entire post.
+This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, combines/minifies/caches CSS & JavaScript files, hides the Generator/WordPress Version number, removes version numbers from CSS and JS links, and fixes the "Read more" link so it displays the entire post.
 
 = Features =
 
 * **Removes the Generator/WordPress Version number** from the HEAD section for security reasons. You don't want your WordPress version being visible because hackers can use it to attack your site. Even if you keep your site up to date, it still could be vulnerable to zero-day exploits.
-* **Removes Version numbers from CSS and JS** in the HEAD for the same security reasons you hide WordPress version. Will also improve site loading speed because removing version numbers from the CSS & JS links will allow browsers to properly cache these files, as well as helping your site code to validate.
+* **Removes Version numbers from CSS and JS** in the HEAD for the same security reasons you hide WordPress version. Will also improve site loading speed because removing version numbers from the CSS & JS links will allow browsers to properly cache these files, as well as helping your site code to validate. This feature improves your Google PageSpeed score.
 * **Removes junk WordPress code** from the HEAD of your site: **RSD link**, **Windows Live Writer Manifest link**, **WordPress Shortlinks** (also removed from HTTP Headers), **Adjacent Posts links (REL = PREV/NEXT)** as all are unnecessary, hurt your SEO and clutter your site code.
-* **Moves JavaScripts from the HEAD to the footer** section of your site for major speed improvements in page loading.
+* **Moves JavaScripts from the HEAD to the footer** section of your site for major speed improvements in page loading. 
+* **Combines, minifies, and caches CSS and JavaScript files** for even better speed improvements in page loading.
 * **Fixes the "Read more"** link so it displays the entire post when you click, not just the part after the "#more".
+
+Several of these features work together to improve page loading speed and will improve your Google PageSpeed score and Yahoo YSlow score. Do a before & after test with GTMetrix to see what I mean.
 
 If you don't want the JavaScript to Footer feature, use [RS Head Cleaner Lite](https://wordpress.org/plugins/rs-head-cleaner-lite/ "RS Head Cleaner Lite") instead.
 
-For a more thorough explanation of what the plugin does and why you need it, visit the [RS Head Cleaner Plus plugin homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/ "RS Head Cleaner Plus Plugin").
+For a more thorough explanation of what the plugin does and why you need it, as well as how to get the best performance results with it, visit the [RS Head Cleaner Plus plugin homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/ "RS Head Cleaner Plus Plugin").
 
 == Installation ==
 
@@ -35,6 +38,10 @@ For a more thorough explanation of what the plugin does and why you need it, vis
 For more info and full documentation, visit the [RS Head Cleaner Plus homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/).
 
 == Changelog ==
+
+Version 1.2, *released 07/03/14*
+
+* Add the Combine/Minify/Cache CSS & JavaScript feature.
 
 Version 1.1.1, *released 06/17/14*
 
@@ -75,6 +82,16 @@ Moving JavaScript to the footer of your page may create issues with some respons
 Test this plugin out on your site before deciding if it will be the right solution for you. Normally I would create an options page to let you turn the JS-to-Footer feature off, but this plugin is all about speeding up your site, and that means minimal calls to the database, so unfortunately it would defeat the purpose of this plugin if I added the ability to change that.
 
 If you don't want the JS to Footer feature, use [RS Head Cleaner Lite](https://wordpress.org/plugins/rs-head-cleaner-lite/ "RS Head Cleaner Lite"). It has all the same features except it won't move JavaScript to the footer.
+
+= But I already have a caching Plugin installed? Why do I need CSS and JS caching?? =
+
+Caching plugins are awesome...in fact I recommend everyone use caching plugins. But it doesn't help speed up the CSS and JavaScript files downloading. It speeds up the actual PHP and database calls by creating static HTML files. If you have a lot of plugins and have 10 JS and 10 CSS files that have to download on every page, that can still bottleneck and slow your site down. This plugin will reduce those down to 1 JS and 1 CSS that have to be downloaded. Combined with a caching plugin, your site will be even faster.
+
+= What if I Don't Want to Have My Page's CSS Files Cached? =
+
+This plugin is built for speed. That's why it doesn't have an options page, because I didn't want it to have any database calls, which would slow it down. After a certain amount of database calls, you lose any speed improvements. Certain industry leading websites have found that for every 100 milliseconds (1/10th of a second) their site slowed down, they lost 1% in sales. Ouch.
+
+This new feature is integral to the plugin, so the caching isn't a feature you want, then this plugin won't be the right match for you. It's designed for people that are very speed conscious, and want hardcore solutions.
 
 = You do great work...can I hire you? =
 
