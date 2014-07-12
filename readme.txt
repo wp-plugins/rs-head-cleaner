@@ -1,7 +1,7 @@
 === RS Head Cleaner Plus ===
 Contributors: RedSand
 Donate link: http://www.redsandmarketing.com/rs-head-cleaner-donate/
-Tags: cache, clean, cleaner, css, footer, generator, head, head-cleaner, javascript, more, minify, security, seo
+Tags: cache, clean, cleaner, css, footer, generator, google, head, head-cleaner, javascript, more, minify, optimize, performance, security, seo, search engine optimization, speed, yahoo
 Requires at least: 3.6
 Tested up to: 3.9
 Stable tag: trunk
@@ -39,9 +39,14 @@ For more info and full documentation, visit the [RS Head Cleaner Plus homepage](
 
 == Changelog ==
 
+Version 1.3.1, *released 07/12/14*
+
+* Added additional security checks.
+* Fixed a minor bug.
+
 Version 1.3, *released 07/03/14*
 
-* Add the Combine/Minify/Cache CSS & JavaScript feature.
+* Added the Combine/Minify/Cache CSS & JavaScript feature.
 
 Version 1.1.1, *released 06/17/14*
 
@@ -83,7 +88,7 @@ Test this plugin out on your site before deciding if it will be the right soluti
 
 If you don't want the JS to Footer feature, use [RS Head Cleaner Lite](https://wordpress.org/plugins/rs-head-cleaner-lite/ "RS Head Cleaner Lite"). It has all the same features except it won't move JavaScript to the footer.
 
-= But I already have a caching Plugin installed? Why do I need CSS and JS caching?? =
+= But I already have a caching Plugin installed...Why do I need CSS and JS caching? =
 
 Caching plugins are awesome...in fact I recommend everyone use caching plugins. But it doesn't help speed up the CSS and JavaScript files downloading. It speeds up the actual PHP and database calls by creating static HTML files. If you have a lot of plugins and have 10 JS and 10 CSS files that have to download on every page, that can still bottleneck and slow your site down. This plugin will reduce those down to 1 JS and 1 CSS that have to be downloaded. Combined with a caching plugin, your site will be even faster.
 
