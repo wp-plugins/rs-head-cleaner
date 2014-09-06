@@ -3,7 +3,7 @@ Contributors: RedSand
 Donate link: http://www.redsandmarketing.com/rs-head-cleaner-donate/
 Tags: cache, clean, cleaner, css, footer, generator, google, head, head-cleaner, javascript, more, minify, optimize, performance, security, seo, search engine optimization, speed, yahoo
 Requires at least: 3.6
-Tested up to: 3.9
+Tested up to: 4.0
 Stable tag: trunk
 
 This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. 
