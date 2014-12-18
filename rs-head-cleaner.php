@@ -4,8 +4,9 @@ Plugin Name: RS Head Cleaner Plus
 Plugin URI: http://www.redsandmarketing.com/plugins/rs-head-cleaner/
 Description: This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, Combines/Minifies/Caches CSS and JavaScript files, removes version numbers from CSS and JS links, hides the WP Version, and fixes the "Read more" link so it displays the entire post.
 Author: Scott Allen
-Version: 1.3.1
+Version: 1.3.2
 Author URI: http://www.redsandmarketing.com/
+Text Domain: rs-head-cleaner
 License: GPLv2
 */
 
@@ -30,7 +31,7 @@ License: GPLv2
 // PLUGIN - BEGIN
 
 /* Note to any other PHP developers reading this:
-My use of the end curly braces "}" is a little funky in that I indent them, I know. IMO it's easier to debug. Just know that it's on purpose even though it's not standard. One of my programming quirks, and just how I roll. :)
+My use of the closing curly braces "}" is a little funky in that I indent them, I know. IMO it's easier to debug. Just know that it's on purpose even though it's not standard. One of my programming quirks, and just how I roll. :)
 */
 
 // Make sure plugin remains secure if called directly
@@ -41,7 +42,7 @@ if ( !function_exists( 'add_action' ) ) {
 	die('ERROR: This plugin requires WordPress and will not function if called directly.');
 	}
 
-define( 'RSHCP_VERSION', '1.3.1' );
+define( 'RSHCP_VERSION', '1.3.2' );
 define( 'RSHCP_REQUIRED_WP_VERSION', '3.6' );
 
 if ( !defined( 'RSHCP_DEBUG' ) ) 				{ define( 'RSHCP_DEBUG', false ); } // Do not change value unless developer asks you to - for debugging only. Change in wp-config.php.
@@ -52,7 +53,7 @@ if ( !defined( 'RSHCP_PLUGIN_NAME' ) ) 			{ define( 'RSHCP_PLUGIN_NAME', trim( d
 if ( !defined( 'RSHC_REMOVE_OPEN_SANS' ) ) 		{ define( 'RSHC_REMOVE_OPEN_SANS', false ); } // Change in wp-config.php
 // By default this feature is off, but if you don't need Open Sans and you want a faster site, add a line in your wp-config.php that says: "define( 'RSHC_REMOVE_OPEN_SANS', true );"
 // RSHC_REMOVE_OPEN_SANS is a shared constant with RSHCL.
-// Any of these can be changed in wp-config.php:
+// Constants prefixed with 'RSMP_' are shared with other RSM Plugins for efficiency. Any of these values can be changed in wp-config.php:
 if ( !defined( 'RSHCP_DIR_NAME' ) ) 			{ define( 'RSHCP_DIR_NAME', 'rshcp-cache' ); }
 if ( !defined( 'RSHCP_JS_PATH' ) ) 				{ define( 'RSHCP_JS_PATH', WP_CONTENT_DIR.'/'.RSHCP_DIR_NAME.'/js/' ); }
 if ( !defined( 'RSHCP_CSS_PATH' ) ) 			{ define( 'RSHCP_CSS_PATH', WP_CONTENT_DIR.'/'.RSHCP_DIR_NAME.'/css/' ); }
@@ -70,7 +71,7 @@ if ( !defined( 'RSMP_WIN_SERVER' ) ) {
 	}
 */
 
-if ( strpos( RSMP_SERVER_NAME_REV, RSMP_DEBUG_SERVER_NAME_REV ) !== 0 && RSMP_SERVER_ADDR != '127.0.0.1' && RSHCP_DEBUG != true ) {
+if ( strpos( RSMP_SERVER_NAME_REV, RSMP_DEBUG_SERVER_NAME_REV ) !== 0 && RSMP_SERVER_ADDR != '127.0.0.1' && !RSHCP_DEBUG && !WP_DEBUG ) {
 	error_reporting(0); // Prevents error display on production sites, but testing on 127.0.0.1 will display errors, or if debug mode turned on
 	}
 
@@ -221,7 +222,7 @@ function rshcp_get_domain($url) {
 	$hostname = $parsed['host'];
 	return $hostname;
 	}
-function rshcp_fix_url($url) {
+function rshcp_fix_url( $url, $rem_frag = false, $rem_query = false, $rev = false ) {
 	// Fix poorly formed URLs so as not to throw errors or cause problems
 	// Too many forward slashes or colons after http
 	$url = preg_replace( "~^(https?)\:+/+~i", "$1://", $url);
@@ -229,12 +230,40 @@ function rshcp_fix_url($url) {
 	$url = preg_replace( "~\.+~i", ".", $url);
 	// Too many slashes after the domain
 	$url = preg_replace( "~([a-z0-9]+)/+([a-z0-9]+)~i", "$1/$2", $url);
+	// Remove fragments
+	if ( !empty( $rem_frag ) && strpos( $url, '#' ) !== false ) { $url_arr = explode( '#', $query ); $url = $url_arr[0]; }
+	// Remove query string completely
+	if ( !empty( $rem_query ) && strpos( $url, '?' ) !== false ) { $url_arr = explode( '?', $query ); $url = $url_arr[0]; }
+	// Reverse
+	if ( !empty( $rev ) ) { $url = strrev($url); }
 	return $url;
 	}
 function rshcp_get_url() {
 	if ( !empty( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] != 'off' ) { $url = 'https://'; } else { $url = 'http://'; }
 	$url .= $_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
 	return $url;
+	}
+function rshcp_get_query_arr($url) {
+	// Get array of variables from query string
+	$parsed = parse_url($url);
+	$query = $parsed['query'];
+	// TEST: $query = rshcp_get_query_string($url); // REPLACE TWO PREV LINES - Note 1.4
+	if ( !empty( $query ) ) { $query_arr = explode( '&', $query ); } else { $query_arr = ''; }
+	return $query_arr;
+	}
+function rshcp_remove_query( $url, $skip_wp_args = false ) {
+	$query_arr = rshcp_get_query_arr($url);
+	if ( empty( $query_arr ) ) { return $url; }
+	$remove_args = array();
+	foreach( $query_arr as $i => $query_arg ) {
+		$query_arg_arr = explode( '=', $query_arg );
+		$key = $query_arg_arr[0];
+		//if ( !empty( $skip_wp_args ) && ( $key == 'p' || $key == 'page_id' || $key == 'cpage' ) ) { continue; }
+		if ( !empty( $skip_wp_args ) && ( $key == 'p' || $key == 'page_id' ) ) { continue; } // DO NOT ADD 'cpage', only 'p' and 'page_id'!!
+		$remove_args[] = $key;
+		}
+	$clean_url = remove_query_arg( $remove_args, $url );
+	return $clean_url;
 	}
 function rshcp_get_slug() {
 	$url = rshcp_get_url();
@@ -296,6 +325,8 @@ function rshcp_inspect_scripts() {
 		$script_src = $wp_scripts->registered[$handle]->src;
 		$script_domain = rshcp_get_domain( $script_src );
 		if( empty( $script_src ) || $handle == $min_slug || $handle == 'contact-form-7' || $script_domain != $domain ) { continue; }
+		$script_src_rev = rshcp_fix_url( $script_src, true, true, true );
+		if ( strpos( $script_src_rev, 'sj.' ) !== 0 ) { continue; } // Not JS
 		$script_handles[] 	= $handle;
 		$script_srcs[] 		= $script_src;
 		$combined_js[] 		= file_get_contents( $script_src );
@@ -338,6 +369,8 @@ function rshcp_inspect_styles() {
 		$style_src = $wp_styles->registered[$handle]->src;
 		$style_domain = rshcp_get_domain( $style_src );
 		if( empty( $style_src ) || $handle == $min_slug || $style_domain != $domain ) { continue; } // || strpos( $style_src, '/themes/' )
+		$style_src_rev = rshcp_fix_url( $style_src, true, true, true );
+		if ( strpos( $style_src_rev, 'ssc.' ) !== 0 ) { continue; } // Not CSS
 		$handle_rgx			= preg_quote( $handle );
 		$style_handles[] 	= $handle;
 		$style_srcs[] 		= $style_src;
@@ -403,20 +436,11 @@ function rshcp_get_server_name() {
 	if ( !empty( $_SERVER['SERVER_NAME'] ) ) { $server_name = strtolower( $_SERVER['SERVER_NAME'] ); } else { $server_name = strtolower( getenv('SERVER_NAME') ); }
 	return $server_name;
 	}
-function rshcp_admin_notices() {
-	$admin_notices = get_option('rshcp_admin_notices');
-	if ( !empty( $admin_notices ) ) {
-		$style 	= $admin_notices['style']; // 'error'  or 'updated'
-		$notice	= $admin_notices['notice'];
-		echo '<div class="'.$style.'"><p>'.$notice.'</p></div>';
-		}
-	delete_option('rshcp_admin_notices');
-	}
 // Standard Functions - END
 
 // Admin Functions - BEGIN
-register_activation_hook( __FILE__, 'rshcp_install_on_activation' );
-function rshcp_install_on_activation() {
+register_activation_hook( __FILE__, 'rshcp_install_on_first_activation' );
+function rshcp_install_on_first_activation() {
 	$installed_ver = get_option('rs_head_cleaner_version');
 	if ( empty( $installed_ver ) || $installed_ver != RSHCP_VERSION ) {
 		update_option('rs_head_cleaner_version', RSHCP_VERSION);
@@ -432,17 +456,29 @@ function rshcp_install_on_activation() {
 	}
 add_action( 'admin_init', 'rshcp_check_version' );
 function rshcp_check_version() {
-	global $wp_version;
-	$rshcp_wp_version = $wp_version;
-	if ( version_compare( $rshcp_wp_version, RSHCP_REQUIRED_WP_VERSION, '<' ) ) {
-		deactivate_plugins( RSHCP_PLUGIN_BASENAME );
-		$notice_text = sprintf( __( 'Plugin deactivated. WordPress Version %s required. Please upgrade WordPress to the latest version.', RSHCP_PLUGIN_NAME ), RSHCP_REQUIRED_WP_VERSION );
-		$new_admin_notice = array( 'style' => 'error', 'notice' => $notice_text );
-		update_option( 'rshcp_admin_notices', $new_admin_notice );
+	if ( current_user_can('manage_options') ) {
+		// Make sure user has minimum required WordPress version, in order to prevent issues
+		global $wp_version;
+		$rshcp_wp_version = $wp_version;
+		if ( version_compare( $rshcp_wp_version, RSHCP_REQUIRED_WP_VERSION, '<' ) ) {
+			deactivate_plugins( RSHCP_PLUGIN_BASENAME );
+			$notice_text = sprintf( __( 'Plugin deactivated. WordPress Version %s required. Please upgrade WordPress to the latest version.', RSHCP_PLUGIN_NAME ), RSHCP_REQUIRED_WP_VERSION );
+			$new_admin_notice = array( 'style' => 'error', 'notice' => $notice_text );
+			update_option( 'rshcp_admin_notices', $new_admin_notice );
+			add_action( 'admin_notices', 'rshcp_admin_notices' );
+			return false;
+			}
 		add_action( 'admin_notices', 'rshcp_admin_notices' );
-		return false;
 		}
-	add_action( 'admin_notices', 'rshcp_admin_notices' );
+	}
+function rshcp_admin_notices() {
+	$admin_notices = get_option('rshcp_admin_notices');
+	if ( !empty( $admin_notices ) ) {
+		$style 	= $admin_notices['style']; // 'error'  or 'updated'
+		$notice	= $admin_notices['notice'];
+		echo '<div class="'.$style.'"><p>'.$notice.'</p></div>';
+		}
+	delete_option('rshcp_admin_notices');
 	}
 // Admin Functions - END
 
