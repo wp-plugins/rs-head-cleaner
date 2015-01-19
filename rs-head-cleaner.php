@@ -4,7 +4,7 @@ Plugin Name: RS Head Cleaner Plus
 Plugin URI: http://www.redsandmarketing.com/plugins/rs-head-cleaner/
 Description: This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, Combines/Minifies/Caches CSS and JavaScript files, removes version numbers from CSS and JS links, hides the WP Version, and fixes the "Read more" link so it displays the entire post.
 Author: Scott Allen
-Version: 1.3.2
+Version: 1.3.3
 Author URI: http://www.redsandmarketing.com/
 Text Domain: rs-head-cleaner
 License: GPLv2
@@ -42,8 +42,8 @@ if ( !function_exists( 'add_action' ) ) {
 	die('ERROR: This plugin requires WordPress and will not function if called directly.');
 	}
 
-define( 'RSHCP_VERSION', '1.3.2' );
-define( 'RSHCP_REQUIRED_WP_VERSION', '3.6' );
+define( 'RSHCP_VERSION', '1.3.3' );
+define( 'RSHCP_REQUIRED_WP_VERSION', '3.7' );
 
 if ( !defined( 'RSHCP_DEBUG' ) ) 				{ define( 'RSHCP_DEBUG', false ); } // Do not change value unless developer asks you to - for debugging only. Change in wp-config.php.
 if ( !defined( 'RSHCP_PLUGIN_BASENAME' ) ) 		{ define( 'RSHCP_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );	}
@@ -149,9 +149,11 @@ add_action( 'init', 'rshcp_remove_opensans', 9999 );
 // Remove Contact Form 7 JS/CSS on pages/posts where shortcode isn't used
 function rshcp_remove_cf7_css_js() {
 	global $post;
-	if ( ! has_shortcode( $post->post_content, 'contact-form-7' ) ) {
-		remove_action('wp_enqueue_scripts', 'wpcf7_enqueue_styles');
-		remove_action('wp_enqueue_scripts', 'wpcf7_enqueue_scripts');
+	if ( is_object( $post ) ) {
+		if ( ! has_shortcode( $post->post_content, 'contact-form-7' ) ) {
+			remove_action('wp_enqueue_scripts', 'wpcf7_enqueue_styles');
+			remove_action('wp_enqueue_scripts', 'wpcf7_enqueue_scripts');
+			}
 		}
 	}
 add_action( 'wp', 'rshcp_remove_cf7_css_js');
@@ -321,17 +323,19 @@ function rshcp_inspect_scripts() {
 	$script_handles = array();
 	$script_srcs 	= array();
 	$combined_js 	= array();
-	foreach( $wp_scripts->queue as $handle ) {
-		$script_src = $wp_scripts->registered[$handle]->src;
-		$script_domain = rshcp_get_domain( $script_src );
-		if( empty( $script_src ) || $handle == $min_slug || $handle == 'contact-form-7' || $script_domain != $domain ) { continue; }
-		$script_src_rev = rshcp_fix_url( $script_src, true, true, true );
-		if ( strpos( $script_src_rev, 'sj.' ) !== 0 ) { continue; } // Not JS
-		$script_handles[] 	= $handle;
-		$script_srcs[] 		= $script_src;
-		$combined_js[] 		= file_get_contents( $script_src );
-		wp_dequeue_script( $handle );
-		wp_deregister_script( $handle );
+	if ( is_object( $wp_scripts ) ) {
+		foreach( $wp_scripts->queue as $handle ) {
+			$script_src = $wp_scripts->registered[$handle]->src;
+			$script_domain = rshcp_get_domain( $script_src );
+			if( empty( $script_src ) || $handle == $min_slug || $handle == 'contact-form-7' || $script_domain != $domain ) { continue; }
+			$script_src_rev = rshcp_fix_url( $script_src, true, true, true );
+			if ( strpos( $script_src_rev, 'sj.' ) !== 0 ) { continue; } // Not JS
+			$script_handles[] 	= $handle;
+			$script_srcs[] 		= $script_src;
+			$combined_js[] 		= file_get_contents( $script_src );
+			wp_dequeue_script( $handle );
+			wp_deregister_script( $handle );
+			}
 		}
 	$combined_js_contents_raw = implode( "\n", $combined_js );
 	$combined_js_contents_len = rshcp_strlen( $combined_js_contents_raw );
@@ -365,47 +369,49 @@ function rshcp_inspect_styles() {
 	$style_handles 	= array();
 	$style_srcs 	= array();
 	$combined_css 	= array();
-	foreach( $wp_styles->queue as $handle ) {
-		$style_src = $wp_styles->registered[$handle]->src;
-		$style_domain = rshcp_get_domain( $style_src );
-		if( empty( $style_src ) || $handle == $min_slug || $style_domain != $domain ) { continue; } // || strpos( $style_src, '/themes/' )
-		$style_src_rev = rshcp_fix_url( $style_src, true, true, true );
-		if ( strpos( $style_src_rev, 'ssc.' ) !== 0 ) { continue; } // Not CSS
-		$handle_rgx			= preg_quote( $handle );
-		$style_handles[] 	= $handle;
-		$style_srcs[] 		= $style_src;
-		// Get the absolute URL to replace relative URLs in CSS since we're moving location of CSS file
-		$css_buffer 		= file_get_contents( $style_src );
-		$style_src_no_http	= preg_replace( "~https?\://~i", '', $style_src );
-		$url_buffer 		= explode( '/', $style_src_no_http );
-		$url_elements		= count( $url_buffer ) - 1;
-		unset( $url_buffer[$url_elements] );
-		--$url_elements;
-		if( preg_match_all( "~(url\('?(?:\.?/)?([a-z0-9/\-_]+\.[a-z]{2,4}(#[a-z0-9]+)?)'?\))~i", $css_buffer, $matches ) ) {
-			$new_url_base = implode( '/', $url_buffer );
-			$css_buffer = preg_replace( "~url\('?\.?/?([a-z0-9/\-_]+\.[a-z]{2,4}(#[a-z0-9]+)?)'?\)~i", "url('".'//'.$new_url_base."/$1')", $css_buffer );
-			}
-		if ( preg_match_all( "~(url\('?(?:\.\./)+(?:[a-z0-9/\-_]+\.[a-z]{2,4}(#[a-z0-9]+)?)'?\))~i", $css_buffer, $matches ) ) {
-			$show_matches = array();
-			foreach( $matches[1] as $m => $match ) {
-				$url_buffer_m = $url_buffer;
-				// Number of directories down
-				$num_dirs_down	= substr_count( $match, '../' );
-				//URL Elements Reduced
-				$url_elements_red = $url_elements - $num_dirs_down;
-				// Removing last element(s) of array is how we go down one or more directories
-				$i = $url_elements;
-				while( $i > $url_elements_red ) { unset( $url_buffer_m[$i] ); $i--; }
-				$new_url_base 	= implode( '/', $url_buffer_m );
-				$m_buffer 		= $match;
-				$m_buffer 		= preg_replace( "~url\('?(?:\.\./)+([a-z0-9/\-_]+\.[a-z]{2,4}(#[a-z0-9]+)?)'?\)~i", "url('".'//'.$new_url_base."/$1')", $m_buffer );
-				$match_rgx 		= preg_quote( $match );
-				$css_buffer 	= preg_replace( "~$match_rgx~i", $m_buffer, $css_buffer, -1, $count );
+	if ( is_object( $wp_styles ) ) {
+		foreach( $wp_styles->queue as $handle ) {
+			$style_src = $wp_styles->registered[$handle]->src;
+			$style_domain = rshcp_get_domain( $style_src );
+			if( empty( $style_src ) || $handle == $min_slug || $style_domain != $domain ) { continue; } // || strpos( $style_src, '/themes/' )
+			$style_src_rev = rshcp_fix_url( $style_src, true, true, true );
+			if ( strpos( $style_src_rev, 'ssc.' ) !== 0 ) { continue; } // Not CSS
+			$handle_rgx			= preg_quote( $handle );
+			$style_handles[] 	= $handle;
+			$style_srcs[] 		= $style_src;
+			// Get the absolute URL to replace relative URLs in CSS since we're moving location of CSS file
+			$css_buffer 		= file_get_contents( $style_src );
+			$style_src_no_http	= preg_replace( "~https?\://~i", '', $style_src );
+			$url_buffer 		= explode( '/', $style_src_no_http );
+			$url_elements		= count( $url_buffer ) - 1;
+			unset( $url_buffer[$url_elements] );
+			--$url_elements;
+			if( preg_match_all( "~(url\('?(?:\.?/)?([a-z0-9/\-_]+\.[a-z]{2,4}(#[a-z0-9]+)?)'?\))~i", $css_buffer, $matches ) ) {
+				$new_url_base = implode( '/', $url_buffer );
+				$css_buffer = preg_replace( "~url\('?\.?/?([a-z0-9/\-_]+\.[a-z]{2,4}(#[a-z0-9]+)?)'?\)~i", "url('".'//'.$new_url_base."/$1')", $css_buffer );
 				}
+			if ( preg_match_all( "~(url\('?(?:\.\./)+(?:[a-z0-9/\-_]+\.[a-z]{2,4}(#[a-z0-9]+)?)'?\))~i", $css_buffer, $matches ) ) {
+				$show_matches = array();
+				foreach( $matches[1] as $m => $match ) {
+					$url_buffer_m = $url_buffer;
+					// Number of directories down
+					$num_dirs_down	= substr_count( $match, '../' );
+					//URL Elements Reduced
+					$url_elements_red = $url_elements - $num_dirs_down;
+					// Removing last element(s) of array is how we go down one or more directories
+					$i = $url_elements;
+					while( $i > $url_elements_red ) { unset( $url_buffer_m[$i] ); $i--; }
+					$new_url_base 	= implode( '/', $url_buffer_m );
+					$m_buffer 		= $match;
+					$m_buffer 		= preg_replace( "~url\('?(?:\.\./)+([a-z0-9/\-_]+\.[a-z]{2,4}(#[a-z0-9]+)?)'?\)~i", "url('".'//'.$new_url_base."/$1')", $m_buffer );
+					$match_rgx 		= preg_quote( $match );
+					$css_buffer 	= preg_replace( "~$match_rgx~i", $m_buffer, $css_buffer, -1, $count );
+					}
+				}
+			$combined_css[] = $css_buffer;
+			wp_dequeue_style( $handle );
+			wp_deregister_style( $handle );
 			}
-		$combined_css[] = $css_buffer;
-		wp_dequeue_style( $handle );
-		wp_deregister_style( $handle );
 		}
 	$combined_css_contents_raw = implode( "\n", $combined_css );
 	$combined_css_contents_len = rshcp_strlen( $combined_css_contents_raw );

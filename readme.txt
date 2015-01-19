@@ -2,7 +2,7 @@
 Contributors: RedSand
 Donate link: http://www.redsandmarketing.com/rs-head-cleaner-donate/
 Tags: cache, clean, cleaner, css, footer, generator, google, head, head-cleaner, javascript, more, minify, optimize, performance, security, seo, search engine optimization, speed, yahoo
-Requires at least: 3.6
+Requires at least: 3.7
 Tested up to: 4.1
 Stable tag: trunk
 
@@ -63,6 +63,11 @@ For a more thorough explanation of what the plugin does and why you need it, as 
 For more info and full documentation, visit the [RS Head Cleaner Plus homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/).
 
 == Changelog ==
+
+Version 1.3.3, *released 01/19/15*
+
+* Fixed a minor bug.
+* Increased minimum required WordPress version to 3.7.
 
 Version 1.3.2, *released 12/18/14*
 
