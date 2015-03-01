@@ -23,7 +23,9 @@ This plugin cleans up a number of issues, doing the work of multiple plugins, im
 
 Several of these features work together to improve page loading speed and will improve your Google PageSpeed score and Yahoo YSlow score. Do a before & after test with GTMetrix to see what I mean.
 
-If you don't want the JavaScript to Footer feature, use [RS Head Cleaner Lite](https://wordpress.org/plugins/rs-head-cleaner-lite/ "RS Head Cleaner Lite") instead.
+If you don't want the JavaScript to Footer feature, or you have any compatibility issues with your JavaScript, use [RS Head Cleaner Lite](https://wordpress.org/plugins/rs-head-cleaner-lite/ "RS Head Cleaner Lite") instead. See the FAQ's.
+
+*As with any JS/CSS minification & caching plugin, it's important to test, test, test.* Because of the type of plugin it is, this plugin may not work for every site out there, but that does not mean the plugin is broken. **If you have any issues, please submit a [support request](http://www.redsandmarketing.com/plugins/wordpress-plugin-support/) so we can look into it and make it as compatible as possible for everyone.**
 
 For a more thorough explanation of what the plugin does and why you need it, as well as how to get the best performance results with it, visit the [RS Head Cleaner Plus plugin homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/ "RS Head Cleaner Plus Plugin").
 
