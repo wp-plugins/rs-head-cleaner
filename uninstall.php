@@ -1,14 +1,13 @@
 <?php
 /*
 RS Head Cleaner - uninstall.php
-Version: 1.3.4
+Version: 1.3.5
 
 This script uninstalls RS Head Cleaner and removes all cache files, options, data, and traces of its existence.
 */
 
-if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) { exit(); }
+if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) 	{ exit(); }
 
-if ( !defined( 'RSHCP_PLUGIN_PATH_SL' ) ) 	{ define( 'RSHCP_PLUGIN_PATH_SL', untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/' ); }
 if ( !defined( 'RSHCP_CACHE_DIR_NAME' ) ) 	{ define( 'RSHCP_CACHE_DIR_NAME', 'rshcp-cache' ); }
 if ( !defined( 'RSHCP_CACHE_PATH' ) ) 		{ define( 'RSHCP_CACHE_PATH', WP_CONTENT_DIR.'/'.RSHCP_CACHE_DIR_NAME.'/' ); }
 if ( !defined( 'RSHCP_JS_PATH' ) ) 			{ define( 'RSHCP_JS_PATH', RSHCP_CACHE_PATH.'/js/' ); }
@@ -28,14 +27,14 @@ function rshcp_uninstall_plugin() {
 			foreach( $filelist as $f => $filename ) {
 				$file = $rshcp_dirs[$d].$filename;
 				if ( is_file( $file ) ){
-					chmod( $file, 0777 );
+					@chmod( $file, 0775 );
 					@unlink( $file );
-					if ( file_exists( $file ) ) { chmod( $file, 0644 ); }
+					if ( file_exists( $file ) ) { @chmod( $file, 0644 ); }
 					}
 				}
-			chmod( $rshcp_dirs[$d], 0777 );
+			@chmod( $rshcp_dirs[$d], 0775 );
 			@rmdir( $rshcp_dirs[$d] );
-			if ( file_exists( $file ) ) { chmod( $rshcl_dirs[$d], 0755 ); }
+			if ( file_exists( $rshcp_dirs[$d] ) ) { @chmod( $rshcp_dirs[$d], 0755 ); }
 			}
 		}
 	

@@ -10,7 +10,7 @@ This plugin cleans up a number of issues, doing the work of multiple plugins, im
 
 == Description == 
 
-This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the HEAD & HTTP headers, moves JavaScript from header to footer, combines/minifies/caches CSS & JavaScript files, hides the Generator/WordPress Version number, removes version numbers from CSS and JS links, and fixes the "Read more" link so it displays the entire post.
+This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the document HEAD & HTTP headers, moves JavaScript from header to footer, combines/minifies/caches CSS & JavaScript files, hides the Generator/WordPress Version number, removes version numbers from CSS and JS links, and fixes the "Read more" link so it displays the entire post.
 
 = Documentation / Tech Support =
 * Documentation: [Plugin Homepage](http://www.redsandmarketing.com/plugins/rs-head-cleaner/)
@@ -26,6 +26,8 @@ This plugin cleans up a number of issues, doing the work of multiple plugins, im
 * **Fixes the "Read more"** link so it displays the entire post when you click, not just the part after the "#more".
 
 Several of these features work together to improve page loading speed and will improve your Google PageSpeed score and Yahoo YSlow score. Do a before & after test with GTMetrix to see what I mean.
+
+The JavaScript & CSS cache files are cleared each time the plugin is deactivated manually through the dashboard (but not on automatic or bulk plugin upgrades). If you would like to manually clear the cache, simply deactivate and reactivate the plugin. Important: If you're using a caching plugin, when you do this, *be sure to clear your caching plugin's file cache as well to prevent issues from a cached page calling on now-missing JS & CSS files*. (For example, with WP Super Cache, go to the settings, and on the Content page, choose "Delete Cache". It will be similar with other caching plugins.)
 
 If you don't want the JavaScript to Footer feature, or you have any compatibility issues with your JavaScript, use [RS Head Cleaner Lite](https://wordpress.org/plugins/rs-head-cleaner-lite/ "RS Head Cleaner Lite") instead. See the FAQ's.
 
@@ -100,6 +102,12 @@ Absolutely...go to my [WordPress Consulting](http://www.redsandmarketing.com/web
 
 == Changelog ==
 
+= 1.3.5 =
+*released 03/03/15*
+
+* Added a function that will clear the JavaScript & CSS cache files each time the plugin is deactivated manually through the dashboard (but not on automatic or bulk plugin upgrades). If you would like to manually clear the cache, simply deactivate and reactivate the plugin. (If you're using a page caching plugin, just be sure to also clear that plugin's cache as well at the same time to prevent related issues.)
+* Fixed a minor bug in the uninstall function.
+
 = 1.3.4 =
 *released 03/01/15*
 
@@ -161,5 +169,5 @@ Absolutely...go to my [WordPress Consulting](http://www.redsandmarketing.com/web
 * Initial release.
 
 == Upgrade Notice ==
-= 1.3.4 =
-Added an uninstall function to clean up files and data upon deleting, and added a minor JavaScript compatibility fix. Please see Changelog for details.
+= 1.3.5 =
+Added a function to clear the JS & CSS cache upon deactivating the plugin, and fixed a minor bug. Please see Changelog for details.
