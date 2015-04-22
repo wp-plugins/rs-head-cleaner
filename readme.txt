@@ -2,8 +2,8 @@
 Contributors: RedSand
 Donate link: http://www.redsandmarketing.com/rs-head-cleaner-donate/
 Tags: cache, clean, cleaner, css, footer, generator, google, head, head-cleaner, javascript, more, minify, optimize, performance, security, seo, search engine optimization, speed, yahoo
-Requires at least: 3.7
-Tested up to: 4.1
+Requires at least: 3.8
+Tested up to: 4.2
 Stable tag: trunk
 
 This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. 
@@ -82,7 +82,7 @@ This plugin is fast, and lean...there are no options needed. You install it and 
 
 = Does this plugin have any known issues? = 
 
-Just one that I know of.
+Just one that we know of.
 
 Moving JavaScript to the footer of your page may create issues with some responsive themes that need the JS libraries to be in the head section of the code. If that's the case then this plugin may not be right for you. Even for me, it's right for 80% of my sites but not all of them. For the rest I put everything but the JavaScript-to-Footer code in the functions.php file of the theme to get similar functionality.
 
@@ -105,6 +105,14 @@ This new feature is integral to the plugin, so the caching isn't a feature you w
 Absolutely...go to my [WordPress Consulting](http://www.redsandmarketing.com/web-design/wordpress-consulting/ "WordPress Consulting") page for more information.
 
 == Changelog ==
+
+= 1.3.7 =
+*released 04/22/15*
+
+* Fixed some bugs with the JavaScript and CSS compression.
+* Added an `.htaccess` file to the `rs-head-cleaner` directory to control browser access to certain files.
+* Increased minimum required WordPress version to 3.8.
+* Made various code improvements.
 
 = 1.3.6 =
 *released 03/06/15*
@@ -178,5 +186,5 @@ Absolutely...go to my [WordPress Consulting](http://www.redsandmarketing.com/web
 * Initial release.
 
 == Upgrade Notice ==
-= 1.3.6 =
-Made various minor code improvements. Please see Changelog for details.
+= 1.3.7 =
+Fixed some bugs, added an .htaccess file, increased the minimum required WordPress version to 3.8, and made various code improvements. Please see Changelog for details.

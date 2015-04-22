@@ -4,7 +4,7 @@ Plugin Name: RS Head Cleaner Plus
 Plugin URI: http://www.redsandmarketing.com/plugins/rs-head-cleaner/
 Description: This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the document HEAD & HTTP headers, moves JavaScript from header to footer, Combines/Minifies/Caches CSS and JavaScript files, removes version numbers from CSS and JS links, hides the WP Version, and fixes the "Read more" link so it displays the entire post.
 Author: Scott Allen
-Version: 1.3.6
+Version: 1.3.7
 Author URI: http://www.redsandmarketing.com/
 Text Domain: rs-head-cleaner
 License: GPLv2
@@ -34,16 +34,15 @@ License: GPLv2
 My use of the closing curly braces "}" is a little funky in that I indent them, I know. IMO it's easier to debug. Just know that it's on purpose even though it's not standard. One of my programming quirks, and just how I roll. :)
 */
 
-// Make sure plugin remains secure if called directly
-if ( !function_exists( 'add_action' ) ) {
-	if ( !headers_sent() ) {
-		header('HTTP/1.1 403 Forbidden');
-		}
-	die('ERROR: This plugin requires WordPress and will not function if called directly.');
+// Make sure plugin remains secure if called directly */
+if ( !defined( 'ABSPATH' ) ) {
+	if ( !headers_sent() ) { header('HTTP/1.1 403 Forbidden'); }
+	die( 'ERROR: This plugin requires WordPress and will not function if called directly.' );
 	}
 
-define( 'RSHCP_VERSION', '1.3.6' );
-define( 'RSHCP_REQUIRED_WP_VERSION', '3.7' );
+define( 'RSHCP_VERSION', '1.3.7' );
+define( 'RSHCP_REQUIRED_WP_VERSION', '3.8' );
+//define( 'RSHCP_REQUIRED_PHP_VERSION', '5.3' ); /* Implement in future version */
 
 if ( !defined( 'RSHCP_DEBUG' ) ) 				{ define( 'RSHCP_DEBUG', FALSE ); } // Do not change value unless developer asks you to - for debugging only. Change in wp-config.php.
 if ( !defined( 'RSMP_SITE_URL' ) ) 				{ define( 'RSMP_SITE_URL', untrailingslashit( site_url() ) ); }
@@ -68,6 +67,10 @@ if ( !defined( 'RSMP_SERVER_NAME' ) ) 			{ define( 'RSMP_SERVER_NAME', rshcp_get
 if ( !defined( 'RSMP_SERVER_NAME_REV' ) ) 		{ define( 'RSMP_SERVER_NAME_REV', strrev( RSMP_SERVER_NAME ) ); }
 if ( !defined( 'RSMP_DEBUG_SERVER_NAME' ) ) 	{ define( 'RSMP_DEBUG_SERVER_NAME', '.redsandmarketing.com' ); }
 if ( !defined( 'RSMP_DEBUG_SERVER_NAME_REV' ) )	{ define( 'RSMP_DEBUG_SERVER_NAME_REV', strrev( RSMP_DEBUG_SERVER_NAME ) ); }
+if ( !defined( 'RSMP_WP_VERSION' ) ) {
+	global $wp_version;
+	define( 'RSMP_WP_VERSION', $wp_version );
+	}
 
 if ( strpos( RSMP_SERVER_NAME_REV, RSMP_DEBUG_SERVER_NAME_REV ) !== 0 && RSMP_SERVER_ADDR != '127.0.0.1' && !RSHCP_DEBUG && !WP_DEBUG ) {
 	error_reporting(0); // Prevents error display on production sites, but testing on 127.0.0.1 will display errors, or if debug mode turned on
@@ -135,15 +138,15 @@ function rshcp_defer_async_js( $url ) {
     return $new_url;
 	}
 add_filter( 'clean_url', 'rshcp_defer_async_js', 9999, 1 );
-// Remove Open Sans to Speed Page Loading - Only for Admin area (default), if you change wp-config.php setting, will also work when logged in on any part of site
+// Remove Open Sans to Speed Page Loading - Only for Admin area, must change wp-config.php setting
 function rshcp_remove_opensans() {
-	if ( is_admin() || RSHC_REMOVE_OPEN_SANS != FALSE ) {
+	if ( is_admin() && FALSE != RSHC_REMOVE_OPEN_SANS ) {
 		wp_deregister_style( 'open-sans' );
 		wp_register_style( 'open-sans', FALSE );
 		wp_enqueue_style( 'open-sans', '' );
 		}
 	}
-add_action( 'init', 'rshcp_remove_opensans', 9999 );
+add_action( 'admin_init', 'rshcp_remove_opensans', 9999 ); // Other potential hooks: init, admin_init, wp_enqueue_scripts, admin_enqueue_scripts
 // Remove Contact Form 7 JS/CSS on pages/posts where shortcode isn't used
 function rshcp_remove_cf7_css_js() {
 	global $post;
@@ -175,7 +178,8 @@ function rshcp_simple_minifier_css( $css_to_minify, $filter = TRUE ) {
 	$css_buffer 	= preg_replace( "~\n{2,}~", "\n", $css_buffer );
 	$css_buffer 	= str_replace( array( "{\n","\n}","\n{","}\n",",\n",";\n" ), array( '{','}','{','}',',',';' ), $css_buffer );
 	// Add more rules - BEGIN
-	
+	$css_buffer 	= preg_replace( "~\s+,~", ",", $css_buffer );
+
 	// Add more rules - END
 	$css_minified	= trim( $css_buffer );
 	return $css_minified;
@@ -212,20 +216,29 @@ function rshcp_simple_minifier_js( $js_to_minify, $filter = TRUE ) {
     }
 function rshcp_get_slug() {
 	$url = rshcp_get_url();
+	$slug = '0';
 	if ( !empty( $url ) ) {
 		$slug = url_to_postid( $url );
 		}
-	else { 
-		$url_parts = explode( '/', $url );
-		$last = count( $url_parts ) - 1;
-		$slug = $url_parts[$last];
+	if ( empty( $slug ) ) {
+		if ( is_home() ) { $slug = 'hm'; }
+		elseif ( is_front_page() ) { $slug = 'fr'; }
+		elseif ( is_search() ) { $slug = 'sr'; }
+		elseif ( is_archive() ) {
+			$url_deslash = untrailingslashit( $url );
+			$url_parts = explode( '/', $url_deslash );
+			$last = count( $url_parts ) - 1;
+			$slug = trim( str_replace( array( '?', '&', '=' ), '-', $url_parts[$last] ), " \t\n\r\0\x0B-" );
+			}
 		}
 	return $slug;
 	}
-function rshcp_strlen($string) {
-	// Use this function instead of mb_strlen because some IIS servers have mb_strlen disabled by default
-	// BUT mb_strlen is superior to strlen, so use it whenever possible
-	if (function_exists( 'mb_strlen' ) ) { $num_chars = mb_strlen($string); } else { $num_chars = strlen($string); }
+function rshcp_strlen( $string ) {
+	/***
+	* Use this function instead of mb_strlen because some servers (often IIS) have mb_ functions disabled by default
+	* BUT mb_strlen is superior to strlen, so use it whenever possible
+	***/
+	if ( function_exists( 'mb_strlen' ) ) { $num_chars = mb_strlen($string, 'UTF-8'); } else { $num_chars = strlen($string); }
 	return $num_chars;
 	}
 add_action('init', 'rshcp_cache_combine_js_css');
@@ -242,14 +255,50 @@ function rshcp_enqueue_styles() {
 	$slug = rshcp_get_slug();
 	$min_slug = 'rsm-min-css-'.$slug;
 	$min_file_slug = $min_slug.'.css';
-	wp_register_style( $min_slug, RSHCP_CSS_URL.$min_file_slug );
+	$deps = array();
+	global $wp_styles;
+	if ( is_object( $wp_styles ) ) {
+		foreach( $wp_styles->queue as $handle ) {
+			$style_deps = (array)$wp_styles->registered[$handle]->deps;
+			/* Keep an eye out for potential issues */
+			if ( !empty( $style_deps ) ) {
+				$deps = array_merge( $deps, $style_deps );
+				}
+			}
+		$deps = rshcp_sort_unique( $deps );
+		foreach( $wp_styles->queue as $handle ) {
+			if ( in_array( $handle, $deps, TRUE ) ) {
+				$key = array_search( $handle, $deps );
+				unset( $deps[$key] );
+				}
+			}
+		}
+	wp_register_style( $min_slug, RSHCP_CSS_URL.$min_file_slug, $deps, RSHCP_VERSION );
 	wp_enqueue_style( $min_slug );
 	}
 function rshcp_enqueue_scripts() {
 	$slug = rshcp_get_slug();
 	$min_slug = 'rsm-min-js-'.$slug;
 	$min_file_slug = $min_slug.'.js';
-	wp_register_script( $min_slug, RSHCP_JS_URL.$min_file_slug, array(), RSHCP_VERSION, TRUE );
+	$deps = array();
+	global $wp_scripts;
+	if ( is_object( $wp_scripts ) ) {
+		foreach( $wp_scripts->queue as $handle ) {
+			$script_deps = (array)$wp_scripts->registered[$handle]->deps;
+			/* Keep an eye out for potential issues */
+			if ( !empty( $script_deps ) ) {
+				$deps = array_merge( $deps, $script_deps );
+				}
+			}
+		$deps = rshcp_sort_unique( $deps );
+		foreach( $wp_scripts->queue as $handle ) {
+			if ( in_array( $handle, $deps, TRUE ) ) {
+				$key = array_search( $handle, $deps );
+				unset( $deps[$key] );
+				}
+			}
+		}
+	wp_register_script( $min_slug, RSHCP_JS_URL.$min_file_slug, $deps, RSHCP_VERSION, TRUE );
 	wp_enqueue_script( $min_slug );
 	}
 function rshcp_inspect_scripts() {
@@ -377,17 +426,41 @@ function rshcp_inspect_styles() {
 // SPEED UP WORDPRESS - END
 
 // Standard Functions - BEGIN
-function rshcp_get_domain($url) {
+
+function rshcp_casetrans( $type, $string ) {
+	/***
+	* Convert case using multibyte version if available, if not, use defaults
+	* Added 1.8.4
+	***/
+	switch ($type) {
+		case 'upper':
+			if ( function_exists( 'mb_strtoupper' ) ) { return mb_strtoupper($string, 'UTF-8'); } else { return strtoupper($string); }
+		case 'lower':
+			if ( function_exists( 'mb_strtolower' ) ) { return mb_strtolower($string, 'UTF-8'); } else { return strtolower($string); }
+		case 'ucfirst':
+			if ( function_exists( 'mb_strtoupper' ) && function_exists( 'mb_substr' ) ) { return mb_strtoupper(mb_substr($string, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($string, 1, NULL, 'UTF-8'); } else { return ucfirst($string); }
+		case 'ucwords':
+			if ( function_exists( 'mb_convert_case' ) ) { return mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'); } else { return ucwords($string); }
+			/***
+			* Note differences in results between ucwords() and this. 
+			* ucwords() will capitalize first characters without altering other characters, whereas this will lowercase everything, but capitalize the first character of each word.
+			* This works better for our purposes, but be aware of differences.
+			***/
+		default:
+			return $string;
+		}
+	}
+function rshcp_get_domain( $url ) {
 	// Get domain from URL
 	// Filter URLs with nothing after http
 	if ( empty( $url ) || preg_match( "~^https?\:*/*$~i", $url ) ) { return ''; }
 	// Fix poorly formed URLs so as not to throw errors when parsing
-	$url = rshcp_fix_url($url);
+	$url = rshcp_fix_url( $url );
 	// NOW start parsing
 	$parsed = parse_url($url);
 	// Filter URLs with no domain
 	if ( empty( $parsed['host'] ) ) { return ''; }
-	return strtolower($parsed['host']);
+	return rshcp_casetrans( 'lower', $parsed['host'] );
 	}
 function rshcp_fix_url( $url, $rem_frag = FALSE, $rem_query = FALSE, $rev = FALSE ) {
 	// Fix poorly formed URLs so as not to throw errors or cause problems
@@ -422,7 +495,7 @@ function rshcp_get_server_name() {
 	elseif 	( !empty( $rshcp_env_http_host ) 	&& strpos( $rshcp_site_domain, $rshcp_env_http_host ) 		!== FALSE ) { $server_name = $rshcp_env_http_host; }
 	elseif 	( !empty( $_SERVER['SERVER_NAME'] ) && strpos( $rshcp_site_domain, $_SERVER['SERVER_NAME'] )	!== FALSE ) { $server_name = $_SERVER['SERVER_NAME']; }
 	elseif 	( !empty( $rshcp_env_srvr_name ) 	&& strpos( $rshcp_site_domain, $rshcp_env_srvr_name )		!== FALSE ) { $server_name = $rshcp_env_srvr_name; }
-	return strtolower( $server_name );
+	return rshcp_casetrans( 'lower', $server_name );
 	}
 function rshcp_doc_txt() {
 	$doc_txt = __( 'Documentation', RSHCP_PLUGIN_NAME );
@@ -435,15 +508,39 @@ function rshcp_scandir( $dir ) {
 	$dir_contents = array_values( array_diff( $dir_contents_raw, $dot_files ) );
 	return $dir_contents;
 	}
+function rshcp_append_log_data( $str = NULL, $rsds_only = FALSE ) {
+	// Adds data to the log for debugging - only use when Debugging - Use with WP_DEBUG & RSHCP_DEBUG
+	/*
+	* Example:
+	* rshcp_append_log_data( "\n".'$rshcp_example_variable: "'.$rshcp_example_variable.'" Line: '.__LINE__.' | '.__FUNCTION__, TRUE );
+	* rshcp_append_log_data( "\n".'$rshcp_example_variable: "'.$rshcp_example_variable.'" Line: '.__LINE__.' | '.__FUNCTION__.' | MEM USED: ' . rshcp_format_bytes( memory_get_usage() ), TRUE );
+	* rshcp_append_log_data( "\n".'[A]$rshcp_example_array_var: "'.serialize($rshcp_example_array_var).'" Line: '.__LINE__.' | '.__FUNCTION__.' | MEM USED: ' . rshcp_format_bytes( memory_get_usage() ), TRUE );
+	* rshcp_append_log_data( "\n".'Line: '.__LINE__.' | '.__FUNCTION__.' | MEM USED: ' . rshcp_format_bytes( memory_get_usage() ), TRUE );
+	*/
+	if ( WP_DEBUG === TRUE && RSHCP_DEBUG === TRUE ) {
+		if ( !empty( $rsds_only ) && strpos( RSMP_SERVER_NAME_REV, RSMP_DEBUG_SERVER_NAME_REV ) !== 0 ) { return; }
+		$rshcp_log_str = 'RSHCP DEBUG: '.str_replace("\n", "", $str);
+		error_log( $rshcp_log_str, 0 ); // Logs to debug.log
+		}
+	}
+function rshcp_format_bytes( $size, $precision = 2 ) {
+	if ( !is_numeric($size) ) { return $size; }
+    $base = log($size) / log(1024);
+    $suffixes = array('', 'k', 'M', 'G', 'T');
+	$formatted_num = round(pow(1024, $base - floor($base)), $precision) . $suffixes[floor($base)];
+    return $formatted_num;
+	}
+function rshcp_sort_unique($arr) {
+	$arr_tmp = array_unique($arr); natcasesort($arr_tmp); $new_arr = array_values($arr_tmp);
+	return $new_arr;
+	}
 // Standard Functions - END
 
 // Admin Functions - BEGIN
 register_activation_hook( __FILE__, 'rshcp_activation' );
 function rshcp_activation() {
 	$installed_ver = get_option('rs_head_cleaner_version');
-	if ( empty( $installed_ver ) || $installed_ver != RSHCP_VERSION ) {
-		update_option('rs_head_cleaner_version', RSHCP_VERSION);
-		}
+	rshcp_upgrade_check( $installed_ver );
 	$rshcp_js_dir		= RSHCP_JS_PATH;
 	$rshcp_css_dir		= RSHCP_CSS_PATH;
 	$rshcp_index_file	= RSHCP_PLUGIN_PATH.'index.php';
@@ -459,10 +556,28 @@ function rshcp_activation() {
 	}
 add_action( 'admin_init', 'rshcp_check_version' );
 function rshcp_check_version() {
+	if ( current_user_can( 'manage_network' ) ) {
+		/* Check for pending admin notices */
+		$admin_notices = get_option('rshcp_admin_notices');
+		if ( !empty( $admin_notices ) ) { add_action( 'network_admin_notices', 'rshcp_admin_notices' ); }
+		/* Make sure not network activated */
+		if ( is_plugin_active_for_network( RSHCP_PLUGIN_BASENAME ) ) {
+			deactivate_plugins( RSHCP_PLUGIN_BASENAME, TRUE, TRUE );
+			$notice_text = __( 'Plugin deactivated. RS Head Cleaner Plus is not available for network activation.', RSHCP_PLUGIN_NAME );
+			$new_admin_notice = array( 'style' => 'error', 'notice' => $notice_text );
+			update_option( 'rshcp_admin_notices', $new_admin_notice );
+			add_action( 'network_admin_notices', 'rshcp_admin_notices' );
+			return FALSE;
+			}
+		}
 	if ( current_user_can('manage_options') ) {
-		// Make sure user has minimum required WordPress version, in order to prevent issues
-		global $wp_version;
-		$rshcp_wp_version = $wp_version;
+		/* Check if plugin has been upgraded */
+		rshcp_upgrade_check();
+		/* Check for pending admin notices */
+		$admin_notices = get_option('rshcp_admin_notices');
+		if ( !empty( $admin_notices ) ) { add_action( 'admin_notices', 'rshcp_admin_notices' ); }
+		/* Make sure user has minimum required WordPress version, in order to prevent issues */
+		$rshcp_wp_version = RSMP_WP_VERSION;
 		if ( version_compare( $rshcp_wp_version, RSHCP_REQUIRED_WP_VERSION, '<' ) ) {
 			deactivate_plugins( RSHCP_PLUGIN_BASENAME );
 			$notice_text = sprintf( __( 'Plugin deactivated. WordPress Version %s required. Please upgrade WordPress to the latest version.', RSHCP_PLUGIN_NAME ), RSHCP_REQUIRED_WP_VERSION );
@@ -471,7 +586,6 @@ function rshcp_check_version() {
 			add_action( 'admin_notices', 'rshcp_admin_notices' );
 			return FALSE;
 			}
-		add_action( 'admin_notices', 'rshcp_admin_notices' );
 		}
 	}
 function rshcp_admin_notices() {
@@ -482,6 +596,10 @@ function rshcp_admin_notices() {
 		echo '<div class="'.$style.'"><p>'.$notice.'</p></div>';
 		}
 	delete_option('rshcp_admin_notices');
+	}
+function rshcp_upgrade_check( $installed_ver = NULL ) {
+	if ( empty( $installed_ver ) ) { $installed_ver = get_option('rs_head_cleaner_version'); }
+	if ( $installed_ver != RSHCP_VERSION ) { update_option('rs_head_cleaner_version', RSHCP_VERSION); }
 	}
 add_filter( 'plugin_row_meta', 'rshcp_filter_plugin_meta', 10, 2 ); // Added 1.3.5
 function rshcp_filter_plugin_meta( $links, $file ) {
@@ -516,4 +634,3 @@ function rshcp_deactivation() {
 // Admin Functions - END
 
 // PLUGIN - END
-?>
