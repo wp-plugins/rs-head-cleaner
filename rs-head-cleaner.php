@@ -2,9 +2,9 @@
 /*
 Plugin Name: RS Head Cleaner Plus
 Plugin URI: http://www.redsandmarketing.com/plugins/rs-head-cleaner/
-Description: This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the document HEAD & HTTP headers, moves JavaScript from header to footer, Combines/Minifies/Caches CSS and JavaScript files, removes version numbers from CSS and JS links, hides the WP Version, and fixes the "Read more" link so it displays the entire post.
+Description: This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the document HEAD & HTTP headers, hides the WP Version, moves JavaScript from header to footer, Combines/Minifies/Caches CSS and JavaScript files, removes version numbers from CSS and JS links, removes HTML comments, and fixes the "Read more" link so it displays the entire post.
 Author: Scott Allen
-Version: 1.3.7
+Version: 1.3.8
 Author URI: http://www.redsandmarketing.com/
 Text Domain: rs-head-cleaner
 License: GPLv2
@@ -34,13 +34,13 @@ License: GPLv2
 My use of the closing curly braces "}" is a little funky in that I indent them, I know. IMO it's easier to debug. Just know that it's on purpose even though it's not standard. One of my programming quirks, and just how I roll. :)
 */
 
-// Make sure plugin remains secure if called directly */
+/* Make sure plugin remains secure if called directly */
 if ( !defined( 'ABSPATH' ) ) {
 	if ( !headers_sent() ) { header('HTTP/1.1 403 Forbidden'); }
 	die( 'ERROR: This plugin requires WordPress and will not function if called directly.' );
 	}
 
-define( 'RSHCP_VERSION', '1.3.7' );
+define( 'RSHCP_VERSION', '1.3.8' );
 define( 'RSHCP_REQUIRED_WP_VERSION', '3.8' );
 //define( 'RSHCP_REQUIRED_PHP_VERSION', '5.3' ); /* Implement in future version */
 
@@ -62,6 +62,10 @@ if ( !defined( 'RSHCP_JS_PATH' ) ) 				{ define( 'RSHCP_JS_PATH', RSHCP_CACHE_PA
 if ( !defined( 'RSHCP_CSS_PATH' ) ) 			{ define( 'RSHCP_CSS_PATH', RSHCP_CACHE_PATH.'/css/' ); }
 if ( !defined( 'RSHCP_JS_URL' ) ) 				{ define( 'RSHCP_JS_URL', WP_CONTENT_URL.'/'.RSHCP_CACHE_DIR_NAME.'/js/' ); }
 if ( !defined( 'RSHCP_CSS_URL' ) ) 				{ define( 'RSHCP_CSS_URL', WP_CONTENT_URL.'/'.RSHCP_CACHE_DIR_NAME.'/css/' ); }
+if ( !defined( 'RSMP_CONTENT_DIR_URL' ) ) 		{ define( 'RSMP_CONTENT_DIR_URL', WP_CONTENT_URL ); }
+if ( !defined( 'RSMP_CONTENT_DIR_PATH' ) ) 		{ define( 'RSMP_CONTENT_DIR_PATH', WP_CONTENT_DIR ); }
+if ( !defined( 'RSMP_PLUGINS_DIR_URL' ) ) 		{ define( 'RSMP_PLUGINS_DIR_URL', WP_PLUGIN_URL ); }
+if ( !defined( 'RSMP_PLUGINS_DIR_PATH' ) ) 		{ define( 'RSMP_PLUGINS_DIR_PATH', WP_PLUGIN_DIR ); }
 if ( !defined( 'RSMP_SERVER_ADDR' ) ) 			{ define( 'RSMP_SERVER_ADDR', rshcp_get_server_addr() ); }
 if ( !defined( 'RSMP_SERVER_NAME' ) ) 			{ define( 'RSMP_SERVER_NAME', rshcp_get_server_name() ); }
 if ( !defined( 'RSMP_SERVER_NAME_REV' ) ) 		{ define( 'RSMP_SERVER_NAME_REV', strrev( RSMP_SERVER_NAME ) ); }
@@ -85,7 +89,7 @@ if ( strpos( RSMP_SERVER_NAME_REV, RSMP_DEBUG_SERVER_NAME_REV ) !== 0 && RSMP_SE
 	// - Remove CF7 JS/CSS				- Remove Contact Form 7 JS/CSS on pages/post where shortcode isn't used (it only needs to be on pages that actually use it)
 	// - Combine, Minify & Cache JS/CSS	- Combine all properly registered/queued JS & CSS into one file, minify, and cache these new single files. Fixes CSS image URL locations too. CSS stays in Header, JS will be moved to footer.
 	// - JavaScript to Footer 			- For Speed in page loading - Part of the Combine, Minify, and Cache
-	// - Head Cleaner					- Removes the following from the head section for SEO and speed: RSD Link, Windows Live Writer Manifest Link, WordPress Shortlinks, and Adjacent Posts links (Prev/Next)
+	// - Head Cleaner					- Removes the following from the head section for SEO, security, and speed: RSD Link, Windows Live Writer Manifest Link, WordPress Shortlinks, and Adjacent Posts links (Prev/Next), HTML Comments
 
 // CLEANUP HEADER CODE - BEGIN
 remove_action ('wp_head', 'rsd_link');
@@ -117,6 +121,29 @@ function rshcp_remove_wp_ver_css_js( $src ) {
 	}
 add_filter( 'style_loader_src', 'rshcp_remove_wp_ver_css_js', 9999 );
 add_filter( 'script_loader_src', 'rshcp_remove_wp_ver_css_js', 9999 );
+
+// Remove HTML Comments
+function rshcp_remove_html_comments( $buffer ) {
+	$rgx	= '~<!--(.|s)*?-->~';
+	$func	= 'rshcp_replace_comments';
+    $buffer = preg_replace_callback( $rgx, $func, $buffer );
+    $buffer = preg_replace( "~\n\s+\n~", "\n", $buffer );
+    $buffer = preg_replace( "~\n{2,}~", "\n", $buffer );
+    return $buffer;
+	}
+function rshcp_replace_comments( $s ) {
+	list( $l ) = $s;
+	if ( preg_match( "~\!?\[(end)?if~iu", $l ) ) { return $l; }
+	return '';
+	}
+function rshcp_buffer_start() {
+    ob_start('rshcp_remove_html_comments');
+	}
+function rshcp_buffer_end() {
+	ob_end_flush();
+	}
+add_action('get_header', 'rshcp_buffer_start', 9999);
+add_action('wp_footer', 'rshcp_buffer_end', 9999);
 // CLEANUP HEADER CODE - END
 
 // IMPROVE USER EXPERIENCE - BEGIN
@@ -315,16 +342,22 @@ function rshcp_inspect_scripts() {
 	$script_handles = array();
 	$script_srcs 	= array();
 	$combined_js 	= array();
+	$http_pref		= rshcp_is_https() ? 'https://' : 'http://';
 	if ( is_object( $wp_scripts ) ) {
 		foreach( $wp_scripts->queue as $handle ) {
-			$script_src = $wp_scripts->registered[$handle]->src;
-			$script_domain = rshcp_get_domain( $script_src );
+			$script_src			= $script_src_path = $wp_scripts->registered[$handle]->src;
+			$script_domain		= rshcp_get_domain( $script_src );
 			if( empty( $script_src ) || $handle == $min_slug || $handle == 'contact-form-7' || $script_domain != $domain ) { continue; }
-			$script_src_rev = rshcp_fix_url( $script_src, TRUE, TRUE, TRUE );
+			$script_src_rev		= rshcp_fix_url( $script_src, TRUE, TRUE, TRUE );
 			if ( strpos( $script_src_rev, 'sj.' ) !== 0 ) { continue; } // Not JS
+			if ( strpos( $script_src_path, '//' ) === 0 ) { $script_src_path = str_replace( '//', $http_pref, $script_src_path ); }
+			$script_src_path	= str_replace( RSMP_CONTENT_DIR_URL, RSMP_CONTENT_DIR_PATH, $script_src_path );
+			$js_buffer			= file_get_contents( $script_src_path );
+			if ( empty( $js_buffer ) ) { continue; }
 			$script_handles[] 	= $handle;
 			$script_srcs[] 		= $script_src;
-			$combined_js[] 		= file_get_contents( $script_src );
+			$combined_js[] 		= $js_buffer;
+			unset ( $js_buffer );
 			wp_dequeue_script( $handle );
 			wp_deregister_script( $handle );
 			}
@@ -361,18 +394,22 @@ function rshcp_inspect_styles() {
 	$style_handles 	= array();
 	$style_srcs 	= array();
 	$combined_css 	= array();
+	$http_pref		= rshcp_is_https() ? 'https://' : 'http://';
 	if ( is_object( $wp_styles ) ) {
 		foreach( $wp_styles->queue as $handle ) {
-			$style_src = $wp_styles->registered[$handle]->src;
-			$style_domain = rshcp_get_domain( $style_src );
+			$style_src			= $style_src_path = $wp_styles->registered[$handle]->src;
+			$style_domain		= rshcp_get_domain( $style_src );
 			if( empty( $style_src ) || $handle == $min_slug || $style_domain != $domain ) { continue; } // || strpos( $style_src, '/themes/' )
-			$style_src_rev = rshcp_fix_url( $style_src, TRUE, TRUE, TRUE );
+			$style_src_rev		= rshcp_fix_url( $style_src, TRUE, TRUE, TRUE );
 			if ( strpos( $style_src_rev, 'ssc.' ) !== 0 ) { continue; } // Not CSS
 			$handle_rgx			= preg_quote( $handle );
+			if ( strpos( $style_src_path, '//' ) === 0 ) { $style_src_path = str_replace( '//', $http_pref, $style_src_path ); }
+			$style_src_path		= str_replace( RSMP_CONTENT_DIR_URL, RSMP_CONTENT_DIR_PATH, $style_src_path );
+			// Get the absolute URL to replace relative URLs in CSS since we're moving location of CSS file
+			$css_buffer 		= file_get_contents( $style_src_path );
+			if ( empty( $css_buffer ) ) { continue; }
 			$style_handles[] 	= $handle;
 			$style_srcs[] 		= $style_src;
-			// Get the absolute URL to replace relative URLs in CSS since we're moving location of CSS file
-			$css_buffer 		= file_get_contents( $style_src );
 			$style_src_no_http	= preg_replace( "~https?\://~i", '', $style_src );
 			$url_buffer 		= explode( '/', $style_src_no_http );
 			$url_elements		= count( $url_buffer ) - 1;
@@ -401,6 +438,7 @@ function rshcp_inspect_styles() {
 					}
 				}
 			$combined_css[] = $css_buffer;
+			unset ( $css_buffer );
 			wp_dequeue_style( $handle );
 			wp_deregister_style( $handle );
 			}
@@ -479,9 +517,13 @@ function rshcp_fix_url( $url, $rem_frag = FALSE, $rem_query = FALSE, $rev = FALS
 	return $url;
 	}
 function rshcp_get_url() {
-	if ( !empty( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] != 'off' ) { $url = 'https://'; } else { $url = 'http://'; }
-	$url .= RSMP_SERVER_NAME . $_SERVER['REQUEST_URI'];
+	$url  = rshcp_is_https() ? 'https://' : 'http://';
+	$url .= RSMP_SERVER_NAME.$_SERVER['REQUEST_URI'];
 	return $url;
+	}
+function rshcp_is_https() {
+	if ( !empty( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] != 'off' ) { return TRUE; }
+	return FALSE;
 	}
 function rshcp_get_server_addr() {
 	if ( !empty( $_SERVER['SERVER_ADDR'] ) ) { $server_addr = $_SERVER['SERVER_ADDR']; } else { $server_addr = getenv('SERVER_ADDR'); }
