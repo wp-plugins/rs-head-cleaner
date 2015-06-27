@@ -1,24 +1,22 @@
 <?php
 /*
 RS Head Cleaner - uninstall.php
-Version: 1.3.5
+Version: 1.3.9
 
 This script uninstalls RS Head Cleaner and removes all cache files, options, data, and traces of its existence.
 */
 
 if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) 	{ exit(); }
 
-if ( !defined( 'RSHCP_CACHE_DIR_NAME' ) ) 	{ define( 'RSHCP_CACHE_DIR_NAME', 'rshcp-cache' ); }
-if ( !defined( 'RSHCP_CACHE_PATH' ) ) 		{ define( 'RSHCP_CACHE_PATH', WP_CONTENT_DIR.'/'.RSHCP_CACHE_DIR_NAME.'/' ); }
+if ( !defined( 'RSHCP_CACHE_DIR_NAME' ) ) 	{ define( 'RSHCP_CACHE_DIR_NAME', 'rshcp' ); }
+if ( !defined( 'RSHCP_CACHE_PATH' ) ) 		{ define( 'RSHCP_CACHE_PATH', WP_CONTENT_DIR.'/cache/'.RSHCP_CACHE_DIR_NAME.'/' ); }
 if ( !defined( 'RSHCP_JS_PATH' ) ) 			{ define( 'RSHCP_JS_PATH', RSHCP_CACHE_PATH.'/js/' ); }
 if ( !defined( 'RSHCP_CSS_PATH' ) ) 		{ define( 'RSHCP_CSS_PATH', RSHCP_CACHE_PATH.'/css/' ); }
 
 function rshcp_uninstall_plugin() {
 	// Options to Delete
-	$rshcp_option_names = array( 'rs_head_cleaner_version', 'rshcp_admin_notices' );
-	foreach( $rshcp_option_names as $i => $rshcp_option ) {
-		delete_option( $rshcp_option );
-		}
+	$rshcp_options = array( 'rs_head_cleaner_version', 'rshcp_admin_notices' );
+	foreach( $rshcp_options as $i => $rshcp_option ) { delete_option( $rshcp_option ); }
 
 	$rshcp_dirs = array( 'css' => RSHCP_CSS_PATH, 'js' => RSHCP_JS_PATH, 'cache' => RSHCP_CACHE_PATH );
 	foreach( $rshcp_dirs as $d => $dir ) {
