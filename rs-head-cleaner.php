@@ -187,6 +187,9 @@ function rshcp_remove_cf7_css_js() {
 	}
 add_action( 'wp', 'rshcp_remove_cf7_css_js');
 // Combine all JS and CSS, Minify, Cache and Serve one file. CSS stays in Header, JS will be moved to footer.
+if ( ! has_action( 'login_enqueue_scripts', 'wp_print_styles' ) ) {
+	add_action( 'login_enqueue_scripts', 'wp_print_styles', 11 );
+	}
 function rshcp_simple_minifier_css( $css_to_minify, $filter = TRUE ) {
 	if( empty( $filter ) ) { return $css_to_minify; }
 	$css_buffer 	= $css_to_minify;
@@ -244,8 +247,7 @@ function rshcp_simple_minifier_js( $js_to_minify, $filter = TRUE ) {
     }
 function rshcp_get_slug() {
 	$url = rshcp_get_url();
-	$slug = rshcp_md5( $url );
-	return $slug;
+	return rshcp_md5( $url );
 	}
 function rshcp_strlen( $string ) {
 	/***
@@ -268,6 +270,7 @@ function rshcp_cache_combine_js_css() {
 		}
 	}
 function rshcp_enqueue_styles() {
+	global $rshcp_css_null; if ( !empty( $rshcp_css_null ) ) { return; }
 	$slug			= rshcp_get_slug();
 	$min_slug		= 'rsm-min-css-'.$slug;
 	$min_file_slug	= $min_slug.'.css';
@@ -279,9 +282,7 @@ function rshcp_enqueue_styles() {
 		foreach( $wp_styles->queue as $handle ) {
 			$style_deps = (array)$wp_styles->registered[$handle]->deps;
 			/* Keep an eye out for potential issues */
-			if ( !empty( $style_deps ) ) {
-				$deps = array_merge( $deps, $style_deps );
-				}
+			if ( !empty( $style_deps ) ) { $deps = array_merge( $deps, $style_deps ); }
 			}
 		$deps = rshcp_sort_unique( $deps );
 		foreach( $wp_styles->queue as $handle ) {
@@ -295,6 +296,7 @@ function rshcp_enqueue_styles() {
 	wp_enqueue_style( $min_slug );
 	}
 function rshcp_enqueue_scripts() {
+	global $rshcp_js_null; if ( !empty( $rshcp_js_null ) ) { return; }
 	$slug			= rshcp_get_slug();
 	$min_slug		= 'rsm-min-js-'.$slug;
 	$min_file_slug	= $min_slug.'.js';
@@ -306,9 +308,7 @@ function rshcp_enqueue_scripts() {
 		foreach( $wp_scripts->queue as $handle ) {
 			$script_deps = (array)$wp_scripts->registered[$handle]->deps;
 			/* Keep an eye out for potential issues */
-			if ( !empty( $script_deps ) ) {
-				$deps = array_merge( $deps, $script_deps );
-				}
+			if ( !empty( $script_deps ) ) { $deps = array_merge( $deps, $script_deps ); }
 			}
 		$deps = rshcp_sort_unique( $deps );
 		foreach( $wp_scripts->queue as $handle ) {
@@ -368,10 +368,13 @@ function rshcp_inspect_scripts() {
 		$raw_js_file_filesize	= FALSE;
 		}
 	$js_cache_time = time() - 86400; // 60 * 60 * 1 - Sec * Min * Hour; 3600 = 1 Hour; 86400 = 24 Hours;
-	if( $raw_js_file_filesize !== $combined_js_contents_len || $raw_js_file_mod_time < $plugin_file_mod_time || $raw_js_file_mod_time < $js_cache_time ) {
-		file_put_contents( $raw_js_file, $combined_js_contents_raw );
-		file_put_contents( $min_js_file, $combined_js_contents );
+	if ( !empty( $combined_js_contents_len ) ) {
+		if ( $raw_js_file_filesize != $combined_js_contents_len || $raw_js_file_mod_time < $plugin_file_mod_time || $raw_js_file_mod_time < $js_cache_time || FALSE === $raw_js_file_mod_time ) {
+			file_put_contents( $raw_js_file, $combined_js_contents_raw );
+			file_put_contents( $min_js_file, $combined_js_contents );
+			}
 		}
+	else { global $rshcp_js_null; $rshcp_js_null = TRUE; }
 	}
 function rshcp_inspect_styles() {
 	$slug			= rshcp_get_slug();
@@ -449,10 +452,13 @@ function rshcp_inspect_styles() {
 		$raw_css_file_filesize	= FALSE;
 		}
 	$css_cache_time = time() - 86400; // 60 * 60 * 1 - Sec * Min * Hour; 3600 = 1 Hour; 86400 = 24 Hours;
-	if( $raw_css_file_filesize !== $combined_css_contents_len || $raw_css_file_mod_time < $plugin_file_mod_time || $raw_css_file_mod_time < $css_cache_time ) {
-		file_put_contents( $raw_css_file, $combined_css_contents_raw );
-		file_put_contents( $min_css_file, $combined_css_contents );
+	if ( !empty( $combined_css_contents_len ) ) {
+		if ( $raw_css_file_filesize != $combined_css_contents_len || $raw_css_file_mod_time < $plugin_file_mod_time || $raw_css_file_mod_time < $css_cache_time || FALSE === $raw_css_file_mod_time ) {
+			file_put_contents( $raw_css_file, $combined_css_contents_raw );
+			file_put_contents( $min_css_file, $combined_css_contents );
+			}
 		}
+	else { global $rshcp_css_null; $rshcp_css_null = TRUE; }
 	}
 // SPEED UP WORDPRESS - END
 
@@ -574,6 +580,9 @@ function rshcp_md5( $string ) {
 	***/
 	if ( function_exists( 'hash' ) ) { $hash = hash( 'md5', $string ); } else { $hash = md5( $string );	}
 	return $hash;
+	}
+function rshcp_is_login_page() {
+    return in_array( $GLOBALS['pagenow'], array( 'wp-login.php', 'wp-register.php' ) );
 	}
 // Standard Functions - END
 
