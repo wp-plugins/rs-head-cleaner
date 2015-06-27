@@ -291,10 +291,8 @@ function rshcp_enqueue_styles() {
 				}
 			}
 		}
-	if ( file_exists( $css_file ) ) {
-		wp_register_style( $min_slug, $css_url, $deps, RSHCP_VERSION );
-		wp_enqueue_style( $min_slug );
-		}
+	wp_register_style( $min_slug, $css_url, $deps, RSHCP_VERSION );
+	wp_enqueue_style( $min_slug );
 	}
 function rshcp_enqueue_scripts() {
 	$slug			= rshcp_get_slug();
@@ -320,10 +318,8 @@ function rshcp_enqueue_scripts() {
 				}
 			}
 		}
-	if ( file_exists( $js_file ) ) {
-		wp_register_script( $min_slug, $js_url, $deps, RSHCP_VERSION, TRUE );
-		wp_enqueue_script( $min_slug );
-		}
+	wp_register_script( $min_slug, $js_url, $deps, RSHCP_VERSION, TRUE );
+	wp_enqueue_script( $min_slug );
 	}
 function rshcp_inspect_scripts() {
 	$slug 	= rshcp_get_slug();
@@ -372,7 +368,7 @@ function rshcp_inspect_scripts() {
 		$raw_js_file_filesize	= FALSE;
 		}
 	$js_cache_time = time() - 86400; // 60 * 60 * 1 - Sec * Min * Hour; 3600 = 1 Hour; 86400 = 24 Hours;
-	if( $raw_js_file_filesize != $combined_js_contents_len || $raw_js_file_mod_time < $plugin_file_mod_time || $raw_js_file_mod_time < $js_cache_time ) {
+	if( $raw_js_file_filesize !== $combined_js_contents_len || $raw_js_file_mod_time < $plugin_file_mod_time || $raw_js_file_mod_time < $js_cache_time ) {
 		file_put_contents( $raw_js_file, $combined_js_contents_raw );
 		file_put_contents( $min_js_file, $combined_js_contents );
 		}
@@ -453,7 +449,7 @@ function rshcp_inspect_styles() {
 		$raw_css_file_filesize	= FALSE;
 		}
 	$css_cache_time = time() - 86400; // 60 * 60 * 1 - Sec * Min * Hour; 3600 = 1 Hour; 86400 = 24 Hours;
-	if( $raw_css_file_filesize != $combined_css_contents_len || $raw_css_file_mod_time < $plugin_file_mod_time || $raw_css_file_mod_time < $css_cache_time ) {
+	if( $raw_css_file_filesize !== $combined_css_contents_len || $raw_css_file_mod_time < $plugin_file_mod_time || $raw_css_file_mod_time < $css_cache_time ) {
 		file_put_contents( $raw_css_file, $combined_css_contents_raw );
 		file_put_contents( $min_css_file, $combined_css_contents );
 		}
@@ -586,6 +582,8 @@ register_activation_hook( __FILE__, 'rshcp_activation' );
 function rshcp_activation() {
 	$installed_ver = get_option('rs_head_cleaner_version');
 	rshcp_upgrade_check( $installed_ver );
+	}
+function rshcp_mk_cache_dir() {
 	$rshcp_js_dir			= RSHCP_JS_PATH;
 	$rshcp_css_dir			= RSHCP_CSS_PATH;
 	$rshcp_index_file		= RSHCP_PLUGIN_PATH.'index.php';
@@ -646,7 +644,10 @@ function rshcp_admin_notices() {
 	}
 function rshcp_upgrade_check( $installed_ver = NULL ) {
 	if ( empty( $installed_ver ) ) { $installed_ver = get_option('rs_head_cleaner_version'); }
-	if ( $installed_ver != RSHCP_VERSION ) { update_option('rs_head_cleaner_version', RSHCP_VERSION); }
+	if ( $installed_ver != RSHCP_VERSION ) {
+		update_option('rs_head_cleaner_version', RSHCP_VERSION);
+		rshcp_mk_cache_dir();
+		}
 	}
 add_filter( 'plugin_row_meta', 'rshcp_filter_plugin_meta', 10, 2 ); // Added 1.3.5
 function rshcp_filter_plugin_meta( $links, $file ) {
