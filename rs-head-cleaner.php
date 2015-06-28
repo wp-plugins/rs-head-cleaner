@@ -4,7 +4,7 @@ Plugin Name: RS Head Cleaner Plus
 Plugin URI: http://www.redsandmarketing.com/plugins/rs-head-cleaner/
 Description: This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the document HEAD & HTTP headers, hides the WP Version, moves JavaScript from header to footer, Combines/Minifies/Caches CSS and JavaScript files, removes version numbers from CSS and JS links, removes HTML comments, and fixes the "Read more" link so it displays the entire post.
 Author: Scott Allen
-Version: 1.3.9
+Version: 1.4
 Author URI: http://www.redsandmarketing.com/
 Text Domain: rs-head-cleaner
 License: GPLv2
@@ -40,9 +40,9 @@ if ( !defined( 'ABSPATH' ) ) {
 	die( 'ERROR: This plugin requires WordPress and will not function if called directly.' );
 	}
 
-define( 'RSHCP_VERSION', '1.3.9' );
+define( 'RSHCP_VERSION', '1.4' );
 define( 'RSHCP_REQUIRED_WP_VERSION', '3.8' );
-//define( 'RSHCP_REQUIRED_PHP_VERSION', '5.3' ); /* Implement in future version */
+define( 'RSHCP_REQUIRED_PHP_VERSION', '5.3' );
 
 if ( !defined( 'RSHCP_DEBUG' ) ) 				{ define( 'RSHCP_DEBUG', FALSE ); } // Do not change value unless developer asks you to - for debugging only. Change in wp-config.php.
 if ( !defined( 'RSMP_SITE_URL' ) ) 				{ define( 'RSMP_SITE_URL', untrailingslashit( site_url() ) ); }
@@ -72,6 +72,9 @@ if ( !defined( 'RSMP_SERVER_NAME' ) ) 			{ define( 'RSMP_SERVER_NAME', rshcp_get
 if ( !defined( 'RSMP_SERVER_NAME_REV' ) ) 		{ define( 'RSMP_SERVER_NAME_REV', strrev( RSMP_SERVER_NAME ) ); }
 if ( !defined( 'RSMP_DEBUG_SERVER_NAME' ) ) 	{ define( 'RSMP_DEBUG_SERVER_NAME', '.redsandmarketing.com' ); }
 if ( !defined( 'RSMP_DEBUG_SERVER_NAME_REV' ) )	{ define( 'RSMP_DEBUG_SERVER_NAME_REV', strrev( RSMP_DEBUG_SERVER_NAME ) ); }
+if ( !defined( 'RSMP_RSM_URL' ) ) 				{ define( 'RSMP_RSM_URL', 'http://www.redsandmarketing.com/' ); }
+if ( !defined( 'RSHCP_HOME_URL' ) ) 			{ define( 'RSHCP_HOME_URL', RSMP_RSM_URL.'plugins/rs-head-cleaner/' ); }
+if ( !defined( 'RSHCP_WP_URL' ) ) 				{ define( 'RSHCP_WP_URL', 'http://wordpress.org/extend/plugins/rs-head-cleaner/' ); }
 if ( !defined( 'RSMP_WP_VERSION' ) ) {
 	global $wp_version;
 	define( 'RSMP_WP_VERSION', $wp_version );
@@ -370,8 +373,8 @@ function rshcp_inspect_scripts() {
 	$js_cache_time = time() - 86400; // 60 * 60 * 1 - Sec * Min * Hour; 3600 = 1 Hour; 86400 = 24 Hours;
 	if ( !empty( $combined_js_contents_len ) ) {
 		if ( $raw_js_file_filesize != $combined_js_contents_len || $raw_js_file_mod_time < $plugin_file_mod_time || $raw_js_file_mod_time < $js_cache_time || FALSE === $raw_js_file_mod_time ) {
-			file_put_contents( $raw_js_file, $combined_js_contents_raw );
-			file_put_contents( $min_js_file, $combined_js_contents );
+			rshcp_write_cache_file( $raw_js_file, $combined_js_contents_raw );
+			rshcp_write_cache_file( $min_js_file, $combined_js_contents );
 			}
 		}
 	else { global $rshcp_js_null; $rshcp_js_null = TRUE; }
@@ -454,8 +457,8 @@ function rshcp_inspect_styles() {
 	$css_cache_time = time() - 86400; // 60 * 60 * 1 - Sec * Min * Hour; 3600 = 1 Hour; 86400 = 24 Hours;
 	if ( !empty( $combined_css_contents_len ) ) {
 		if ( $raw_css_file_filesize != $combined_css_contents_len || $raw_css_file_mod_time < $plugin_file_mod_time || $raw_css_file_mod_time < $css_cache_time || FALSE === $raw_css_file_mod_time ) {
-			file_put_contents( $raw_css_file, $combined_css_contents_raw );
-			file_put_contents( $min_css_file, $combined_css_contents );
+			rshcp_write_cache_file( $raw_css_file, $combined_css_contents_raw );
+			rshcp_write_cache_file( $min_css_file, $combined_css_contents );
 			}
 		}
 	else { global $rshcp_css_null; $rshcp_css_null = TRUE; }
@@ -591,6 +594,7 @@ register_activation_hook( __FILE__, 'rshcp_activation' );
 function rshcp_activation() {
 	$installed_ver = get_option('rs_head_cleaner_version');
 	rshcp_upgrade_check( $installed_ver );
+	rshcp_mk_cache_dir();
 	}
 function rshcp_mk_cache_dir() {
 	$rshcp_js_dir			= RSHCP_JS_PATH;
@@ -607,6 +611,17 @@ function rshcp_mk_cache_dir() {
 		}
 	@copy ( $rshcp_index_file, RSHCP_CACHE_PATH.'index.php' );
 	@copy ( $rshcp_htaccess_file, RSHCP_CACHE_PATH.'.htaccess' );
+	}
+function rshcp_write_cache_file( $file, $contents, $i = 0 ) {
+	/***
+	* This function ensures that the cache file is written.
+	* file_put_contents() just throws a PHP Warning if a folder is missing, but this will attempt to create the folder and write the file up to 3 times.
+	***/
+	$i++; $m = 3;
+	if ( $i <= $m && FALSE === file_put_contents( $file, $contents ) ) {
+		rshcp_mk_cache_dir();
+		rshcp_write_cache_file( $file, $contents, $i );
+		}
 	}
 add_action( 'admin_init', 'rshcp_check_version' );
 function rshcp_check_version() {
@@ -640,6 +655,16 @@ function rshcp_check_version() {
 			add_action( 'admin_notices', 'rshcp_admin_notices' );
 			return FALSE;
 			}
+		/* Make sure user has minimum required PHP version, in order to prevent issues */
+		$rshcp_php_version = RSMP_PHP_VERSION;
+		if ( !empty( $rshcp_php_version ) && version_compare( RSMP_PHP_VERSION, RSHCP_REQUIRED_PHP_VERSION, '<' ) ) {
+			deactivate_plugins( RSHCP_PLUGIN_BASENAME );
+			$notice_text = sprintf( __( '<p>Plugin deactivated. <strong>Your server is running PHP version %3$s, but RS Head Cleaner Plus requires at least PHP %1$s.</strong> We are no longer supporting PHP 5.2, as it has not been supported by the PHP team <a href=%2$s>since 2011</a>, and there are known security, performance, and compatibility issues.</p><p>The version of PHP running on your server is <em>extremely out of date</em>. You should upgrade your PHP version as soon as possible.</p><p>If you need help with this, please contact your web hosting company and ask them to switch your PHP version to 5.4 or 5.5. Please see the <a href=%4$s>plugin documentation</a> if you have further questions.</p>', RSHCP_PLUGIN_NAME ), RSHCP_REQUIRED_PHP_VERSION, '"http://php.net/archive/2011.php#id2011-08-23-1" target="_blank" rel="external" ', $rshcp_php_version, '"'.RSHCP_HOME_URL.'?src='.RSHCP_VERSION.'-php-notice#rshc_requirements" target="_blank" rel="external" ' ); /* NEEDS TRANSLATION - Added 1.4.0 */
+			$new_admin_notice = array( 'style' => 'error', 'notice' => $notice_text );
+			update_option( 'rshcp_admin_notices', $new_admin_notice );
+			add_action( 'admin_notices', 'rshcp_admin_notices' );
+			return FALSE;
+			}
 		}
 	}
 function rshcp_admin_notices() {
@@ -653,10 +678,7 @@ function rshcp_admin_notices() {
 	}
 function rshcp_upgrade_check( $installed_ver = NULL ) {
 	if ( empty( $installed_ver ) ) { $installed_ver = get_option('rs_head_cleaner_version'); }
-	if ( $installed_ver != RSHCP_VERSION ) {
-		update_option('rs_head_cleaner_version', RSHCP_VERSION);
-		rshcp_mk_cache_dir();
-		}
+	if ( $installed_ver != RSHCP_VERSION ) { update_option('rs_head_cleaner_version', RSHCP_VERSION); rshcp_mk_cache_dir(); }
 	}
 add_filter( 'plugin_row_meta', 'rshcp_filter_plugin_meta', 10, 2 ); // Added 1.3.5
 function rshcp_filter_plugin_meta( $links, $file ) {
@@ -672,17 +694,24 @@ function rshcp_filter_plugin_meta( $links, $file ) {
 	}
 register_deactivation_hook( __FILE__, 'rshcp_deactivation' );
 function rshcp_deactivation() {
-	$rshcp_dirs = array( 'css' => RSHCP_CSS_PATH, 'js' => RSHCP_JS_PATH );
-	foreach( $rshcp_dirs as $d => $dir ) {
-		if ( is_dir( $rshcp_dirs[$d] ) ) {
-			$filelist = rshcp_scandir( $rshcp_dirs[$d] );
-			foreach( $filelist as $f => $filename ) {
-				$file = $rshcp_dirs[$d].$filename; $filerev = strrev($file); $drev = strrev($d);
-				if ( is_file( $file ) ){
-					if ( strpos( $filerev, $drev.'.' ) !== 0 ) { continue; }
-					@chmod( $file, 0775 );
-					@unlink( $file );
-					if ( file_exists( $file ) ) { @chmod( $file, 0644 ); }
+	$rshcp_css_path_old = str_replace( '/cache/'.RSHCP_CACHE_DIR_NAME.'/', '/rshcp-cache/', RSHCP_CSS_PATH );
+	$rshcp_js_path_old = str_replace( '/cache/'.RSHCP_CACHE_DIR_NAME.'/', '/rshcp-cache/', RSHCP_JS_PATH );
+	$rshcp_dirs_all = array(
+		array( 'css' => RSHCP_CSS_PATH, 'js' => RSHCP_JS_PATH ),
+		array( 'css' => $rshcp_css_path_old, 'js' => $rshcp_js_path_old ),
+		);
+	foreach( $rshcp_dirs_all as $i => $rshcp_dirs ) {
+		foreach( $rshcp_dirs as $d => $dir ) {
+			if ( is_dir( $rshcp_dirs[$d] ) ) {
+				$filelist = rshcp_scandir( $rshcp_dirs[$d] );
+				foreach( $filelist as $f => $filename ) {
+					$file = $rshcp_dirs[$d].$filename; $filerev = strrev($file); $drev = strrev($d);
+					if ( is_file( $file ) ){
+						if ( strpos( $filerev, $drev.'.' ) !== 0 ) { continue; }
+						@chmod( $file, 0775 );
+						@unlink( $file );
+						if ( file_exists( $file ) ) { @chmod( $file, 0644 ); }
+						}
 					}
 				}
 			}

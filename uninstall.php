@@ -1,7 +1,7 @@
 <?php
 /*
 RS Head Cleaner - uninstall.php
-Version: 1.3.9
+Version: 1.4
 
 This script uninstalls RS Head Cleaner and removes all cache files, options, data, and traces of its existence.
 */
@@ -17,25 +17,31 @@ function rshcp_uninstall_plugin() {
 	// Options to Delete
 	$rshcp_options = array( 'rs_head_cleaner_version', 'rshcp_admin_notices' );
 	foreach( $rshcp_options as $i => $rshcp_option ) { delete_option( $rshcp_option ); }
-
-	$rshcp_dirs = array( 'css' => RSHCP_CSS_PATH, 'js' => RSHCP_JS_PATH, 'cache' => RSHCP_CACHE_PATH );
-	foreach( $rshcp_dirs as $d => $dir ) {
-		if ( is_dir( $rshcp_dirs[$d] ) ) {
-			$filelist = rshcp_scandir( $rshcp_dirs[$d] );
-			foreach( $filelist as $f => $filename ) {
-				$file = $rshcp_dirs[$d].$filename;
-				if ( is_file( $file ) ){
-					@chmod( $file, 0775 );
-					@unlink( $file );
-					if ( file_exists( $file ) ) { @chmod( $file, 0644 ); }
+	$rshcp_cache_path_old	= str_replace( '/cache/'.RSHCP_CACHE_DIR_NAME.'/', '/rshcp-cache/', RSHCP_CACHE_PATH );
+	$rshcp_css_path_old		= str_replace( '/cache/'.RSHCP_CACHE_DIR_NAME.'/', '/rshcp-cache/', RSHCP_CSS_PATH );
+	$rshcp_js_path_old		= str_replace( '/cache/'.RSHCP_CACHE_DIR_NAME.'/', '/rshcp-cache/', RSHCP_JS_PATH );
+	$rshcp_dirs_all = array( 
+		array( 'css' => RSHCP_CSS_PATH, 'js' => RSHCP_JS_PATH, 'cache' => RSHCP_CACHE_PATH ),
+		array( 'css' => $rshcp_css_path_old, 'js' => $rshcp_js_path_old, 'cache' => $rshcp_cache_path_old ),
+		);
+	foreach( $rshcp_dirs_all as $i => $rshcp_dirs ) {
+		foreach( $rshcp_dirs as $d => $dir ) {
+			if ( is_dir( $rshcp_dirs[$d] ) ) {
+				$filelist = rshcp_scandir( $rshcp_dirs[$d] );
+				foreach( $filelist as $f => $filename ) {
+					$file = $rshcp_dirs[$d].$filename;
+					if ( is_file( $file ) ){
+						@chmod( $file, 0775 );
+						@unlink( $file );
+						if ( file_exists( $file ) ) { @chmod( $file, 0644 ); }
+						}
 					}
+				@chmod( $rshcp_dirs[$d], 0775 );
+				@rmdir( $rshcp_dirs[$d] );
+				if ( file_exists( $rshcp_dirs[$d] ) ) { @chmod( $rshcp_dirs[$d], 0755 ); }
 				}
-			@chmod( $rshcp_dirs[$d], 0775 );
-			@rmdir( $rshcp_dirs[$d] );
-			if ( file_exists( $rshcp_dirs[$d] ) ) { @chmod( $rshcp_dirs[$d], 0755 ); }
 			}
 		}
-	
 	}
 
 function rshcp_scandir( $dir ) {
