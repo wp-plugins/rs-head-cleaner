@@ -115,6 +115,7 @@ Absolutely...go to my [WordPress Consulting](http://www.redsandmarketing.com/web
 
 = 1.4.1 =
 *released 07/10/15*
+
 * Improved page load speed, and improved Google PageSpeed, Yahoo YSlow, and GTmetrix scores.
 * Improved compatibility with certain themes and scripts.
 * Improved handling of jQuery and Contact Form 7 scripts. This is one of the few minification plugins that handles these correctly.
