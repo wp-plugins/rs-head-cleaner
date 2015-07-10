@@ -113,10 +113,12 @@ Absolutely...go to my [WordPress Consulting](http://www.redsandmarketing.com/web
 
 == Changelog ==
 
-= 1.4.0.1 =
-*released 06/29/15*
-
-* Fixed a bug.
+= 1.4.1 =
+*released 07/10/15*
+* Improved page load speed, and improved Google PageSpeed, Yahoo YSlow, and GTmetrix scores.
+* Improved compatibility with certain themes and scripts.
+* Improved handling of jQuery and Contact Form 7 scripts. This is one of the few minification plugins that handles these correctly.
+* Added a second concatenated and minified JavaScript in the head to streamline scripts that cannot be moved to the footer without breaking functionality.
 
 = 1.4 =
 *released 06/27/15*
@@ -219,5 +221,5 @@ Absolutely...go to my [WordPress Consulting](http://www.redsandmarketing.com/web
 * Initial release.
 
 == Upgrade Notice ==
-= 1.4 =
-* Fixed a bug. Please see Changelog for details.
+= 1.4.1 =
+* Improved page load speed, improved Google PageSpeed, Yahoo YSlow, and GTmetrix scores, improved compatibility, and improved handling of jQuery and Contact Form 7 scripts. Please see Changelog for details.

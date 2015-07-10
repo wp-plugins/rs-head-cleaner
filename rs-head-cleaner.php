@@ -4,7 +4,7 @@ Plugin Name: RS Head Cleaner Plus
 Plugin URI: http://www.redsandmarketing.com/plugins/rs-head-cleaner/
 Description: This plugin cleans up a number of issues, doing the work of multiple plugins, improving speed, efficiency, security, SEO, and user experience. It removes junk code from the document HEAD & HTTP headers, hides the WP Version, moves JavaScript from header to footer, Combines/Minifies/Caches CSS and JavaScript files, removes version numbers from CSS and JS links, removes HTML comments, and fixes the "Read more" link so it displays the entire post.
 Author: Scott Allen
-Version: 1.4.0.1
+Version: 1.4.1
 Author URI: http://www.redsandmarketing.com/
 Text Domain: rs-head-cleaner
 License: GPLv2
@@ -40,7 +40,10 @@ if ( !defined( 'ABSPATH' ) ) {
 	die( 'ERROR: This plugin requires WordPress and will not function if called directly.' );
 	}
 
-define( 'RSHCP_VERSION', '1.4.0.1' );
+/* BENCHMARK - BEGIN */
+//$start_time = rshcp_microtime();
+
+define( 'RSHCP_VERSION', '1.4.1' );
 define( 'RSHCP_REQUIRED_WP_VERSION', '3.8' );
 define( 'RSHCP_REQUIRED_PHP_VERSION', '5.3' );
 
@@ -67,23 +70,25 @@ if ( !defined( 'RSMP_CONTENT_DIR_URL' ) ) 		{ define( 'RSMP_CONTENT_DIR_URL', WP
 if ( !defined( 'RSMP_CONTENT_DIR_PATH' ) ) 		{ define( 'RSMP_CONTENT_DIR_PATH', WP_CONTENT_DIR ); }
 if ( !defined( 'RSMP_PLUGINS_DIR_URL' ) ) 		{ define( 'RSMP_PLUGINS_DIR_URL', WP_PLUGIN_URL ); }
 if ( !defined( 'RSMP_PLUGINS_DIR_PATH' ) ) 		{ define( 'RSMP_PLUGINS_DIR_PATH', WP_PLUGIN_DIR ); }
-if ( !defined( 'RSMP_SERVER_ADDR' ) ) 			{ define( 'RSMP_SERVER_ADDR', rshcp_get_server_addr() ); }
-if ( !defined( 'RSMP_SERVER_NAME' ) ) 			{ define( 'RSMP_SERVER_NAME', rshcp_get_server_name() ); }
-if ( !defined( 'RSMP_SERVER_NAME_REV' ) ) 		{ define( 'RSMP_SERVER_NAME_REV', strrev( RSMP_SERVER_NAME ) ); }
+if ( !defined( 'RSHCP_SERVER_ADDR' ) ) 			{ define( 'RSHCP_SERVER_ADDR', rshcp_get_server_addr() ); }
+if ( !defined( 'RSHCP_SERVER_NAME' ) ) 			{ define( 'RSHCP_SERVER_NAME', rshcp_get_server_name() ); }
+if ( !defined( 'RSHCP_SERVER_NAME_REV' ) ) 		{ define( 'RSHCP_SERVER_NAME_REV', strrev( RSHCP_SERVER_NAME ) ); }
 if ( !defined( 'RSMP_DEBUG_SERVER_NAME' ) ) 	{ define( 'RSMP_DEBUG_SERVER_NAME', '.redsandmarketing.com' ); }
 if ( !defined( 'RSMP_DEBUG_SERVER_NAME_REV' ) )	{ define( 'RSMP_DEBUG_SERVER_NAME_REV', strrev( RSMP_DEBUG_SERVER_NAME ) ); }
 if ( !defined( 'RSMP_RSM_URL' ) ) 				{ define( 'RSMP_RSM_URL', 'http://www.redsandmarketing.com/' ); }
 if ( !defined( 'RSHCP_HOME_URL' ) ) 			{ define( 'RSHCP_HOME_URL', RSMP_RSM_URL.'plugins/rs-head-cleaner/' ); }
 if ( !defined( 'RSHCP_WP_URL' ) ) 				{ define( 'RSHCP_WP_URL', 'http://wordpress.org/extend/plugins/rs-head-cleaner/' ); }
 if ( !defined( 'RSHCP_PHP_VERSION' ) ) 			{ define( 'RSHCP_PHP_VERSION', PHP_VERSION ); }
-if ( !defined( 'RSMP_WP_VERSION' ) ) {
-	global $wp_version;
-	define( 'RSMP_WP_VERSION', $wp_version );
-	}
+if ( !defined( 'RSHCP_WP_VERSION' ) ) 			{ global $wp_version; define( 'RSHCP_WP_VERSION', $wp_version ); }
 
-if ( strpos( RSMP_SERVER_NAME_REV, RSMP_DEBUG_SERVER_NAME_REV ) !== 0 && RSMP_SERVER_ADDR != '127.0.0.1' && !RSHCP_DEBUG && !WP_DEBUG ) {
+if ( strpos( RSHCP_SERVER_NAME_REV, RSMP_DEBUG_SERVER_NAME_REV ) !== 0 && RSHCP_SERVER_ADDR != '127.0.0.1' && TRUE !== RSHCP_DEBUG && TRUE !== WP_DEBUG ) {
 	error_reporting(0); // Prevents error display on production sites, but testing on 127.0.0.1 will display errors, or if debug mode turned on
 	}
+
+/* SET ADVANCED OPTIONS - Change be overridden in wp-config.php. Advanced users only. */
+if ( !defined( 'RSHCP_NO_MINIFY_ALL' ) ) 		{ define( 'RSHCP_NO_MINIFY_ALL', FALSE ); }
+if ( !defined( 'RSHCP_NO_MINIFY_CSS' ) ) 		{ define( 'RSHCP_NO_MINIFY_CSS', FALSE ); }
+if ( !defined( 'RSHCP_NO_MINIFY_JS' ) ) 		{ define( 'RSHCP_NO_MINIFY_JS', FALSE ); }
 
 // Adds features, cleans up WP code, and eliminates need for multiple plugins:
 	// - Hide WP Generator 				- Security
@@ -119,9 +124,7 @@ remove_action('wp_head', 'wp_generator');
 
 // Remove version numbers from CSS and JS in HEAD
 function rshcp_remove_wp_ver_css_js( $src ) {
-	if ( strpos( $src, 'ver=' ) ) {
-		$src = remove_query_arg( 'ver', $src );
-		}
+	if ( strpos( $src, 'ver=' ) ) { $src = remove_query_arg( 'ver', $src ); }
 	return $src;
 	}
 add_filter( 'style_loader_src', 'rshcp_remove_wp_ver_css_js', 9999 );
@@ -164,8 +167,13 @@ add_filter('the_content', 'rshcp_remove_more');
 // Add Defer & Async to Scripts
 function rshcp_defer_async_js( $url ) {
 	if ( is_admin() ) { return $url; } // Skip if in WP Admin
+	$slug			= rshcp_get_slug();
+	$min_slug		= 'rsm-min-js-'.$slug;
+	$min_file_slug	= $min_slug.'.js';
+	$js_url			= RSHCP_JS_URL.$min_file_slug;
     if ( FALSE === strpos( $url, '.js' ) ) { return $url; } // Skip non-JS
-    if ( strpos( $url, 'jquery.js' ) || strpos( $url, '/jquery' ) || strpos( $url, '/masonry' ) || strpos( $url, '/themes/' ) || strpos( $url, '/contact-form-7/' ) ) { return $url; } // Skip jquery and theme related JS
+    if ( FALSE !== strpos( $url, $js_url ) ) { return $url; }
+    if ( strpos( $url, 'jquery.js' ) || strpos( $url, '/jquery' ) || strpos( $url, '/masonry' ) || strpos( $url, '/themes/' ) ) { return $url; } // Skip jquery and theme related JS
 	$new_url = "$url' async='async' defer='defer";
     return $new_url;
 	}
@@ -189,7 +197,9 @@ function rshcp_remove_cf7_css_js() {
 			}
 		}
 	}
-add_action( 'wp', 'rshcp_remove_cf7_css_js');
+if ( defined( 'WPCF7_VERSION' ) ) {
+	add_action( 'wp', 'rshcp_remove_cf7_css_js');
+	}
 // Combine all JS and CSS, Minify, Cache and Serve one file. CSS stays in Header, JS will be moved to footer.
 if ( ! has_action( 'login_enqueue_scripts', 'wp_print_styles' ) ) {
 	add_action( 'login_enqueue_scripts', 'wp_print_styles', 11 );
@@ -264,24 +274,20 @@ function rshcp_strlen( $string ) {
 add_action('init', 'rshcp_cache_combine_js_css');
 function rshcp_cache_combine_js_css() {
 	if ( !is_admin() && !is_user_logged_in() ) {
-		add_action( 'wp_enqueue_scripts', 'rshcp_enqueue_styles', 9999 );
-		add_action( 'wp_enqueue_scripts', 'rshcp_enqueue_scripts', 9999 );
-		add_action( 'login_enqueue_scripts', 'rshcp_enqueue_styles', 9999 );
-		add_action( 'login_enqueue_scripts', 'rshcp_enqueue_scripts', 9999 );
+		foreach ( array( 'wp_enqueue_scripts', 'login_enqueue_scripts' ) as $a ) { foreach ( array( -999 => 'styles', 9999 => 'scripts' ) as $p => $b ) { add_action( $a, 'rshcp_enqueue_'.$b, $p ); } }
 		add_action( 'wp_print_styles', 'rshcp_inspect_styles', 9999 );
-		add_action( 'wp_print_scripts', 'rshcp_inspect_scripts', 9999 );
-		add_action( 'wp_print_head_scripts', 'rshcp_inspect_scripts', 9999 );
+		foreach ( array( 'wp_print_scripts', 'wp_print_head_scripts' ) as $a ) { add_action( $a, 'rshcp_inspect_scripts', 9999 ); }
+		foreach ( array( 'wp_head', 'login_head' ) as $a ) { add_action( $a, 'rshcp_insert_head_js', 10 ); }
 		}
 	}
 function rshcp_enqueue_styles() {
-	global $rshcp_css_null; if ( !empty( $rshcp_css_null ) ) { return; }
+	global $rshcp_css_null,$wp_styles;
+	if ( !empty( $rshcp_css_null ) ) { return; }
 	$slug			= rshcp_get_slug();
 	$min_slug		= 'rsm-min-css-'.$slug;
 	$min_file_slug	= $min_slug.'.css';
 	$css_url		= RSHCP_CSS_URL.$min_file_slug;
-	$css_file		= RSHCP_CSS_PATH.$min_file_slug;
-	$deps = array();
-	global $wp_styles;
+	$deps 			= array();
 	if ( is_object( $wp_styles ) ) {
 		foreach( $wp_styles->queue as $handle ) {
 			$style_deps = (array)$wp_styles->registered[$handle]->deps;
@@ -296,18 +302,18 @@ function rshcp_enqueue_styles() {
 				}
 			}
 		}
+	if ( TRUE === RSHCP_NO_MINIFY_ALL || TRUE === RSHCP_NO_MINIFY_CSS ) { $css_url = str_replace( '-min-', '-raw-', $css_url ); }
 	wp_register_style( $min_slug, $css_url, $deps, RSHCP_VERSION );
 	wp_enqueue_style( $min_slug );
 	}
 function rshcp_enqueue_scripts() {
-	global $rshcp_js_null; if ( !empty( $rshcp_js_null ) ) { return; }
+	global $rshcp_js_null,$wp_scripts;
+	if ( TRUE === $rshcp_js_null ) { return; }
 	$slug			= rshcp_get_slug();
 	$min_slug		= 'rsm-min-js-'.$slug;
 	$min_file_slug	= $min_slug.'.js';
 	$js_url			= RSHCP_JS_URL.$min_file_slug;
-	$js_file		= RSHCP_JS_PATH.$min_file_slug;
 	$deps			= array();
-	global $wp_scripts;
 	if ( is_object( $wp_scripts ) ) {
 		foreach( $wp_scripts->queue as $handle ) {
 			$script_deps = (array)$wp_scripts->registered[$handle]->deps;
@@ -322,29 +328,69 @@ function rshcp_enqueue_scripts() {
 				}
 			}
 		}
+	if ( TRUE === RSHCP_NO_MINIFY_ALL || TRUE === RSHCP_NO_MINIFY_JS ) { $js_url = str_replace( '-min-', '-raw-', $js_url ); }
 	wp_register_script( $min_slug, $js_url, $deps, RSHCP_VERSION, TRUE );
 	wp_enqueue_script( $min_slug );
 	}
-function rshcp_inspect_scripts() {
+function rshcp_insert_head_js() {
+	global $rshcp_js_h_null;
+	if ( TRUE === $rshcp_js_h_null ) { return; }
+	if ( !is_admin() && !is_user_logged_in() ) {
+		$slug			= rshcp_get_slug();
+		$min_slug		= 'rsm-min-js-h'.$slug;
+		$min_file_slug	= $min_slug.'.js';
+		$js_h_url		= RSHCP_JS_URL.$min_file_slug;
+		if ( TRUE === RSHCP_NO_MINIFY_ALL || TRUE === RSHCP_NO_MINIFY_JS ) { $js_h_url = str_replace( '-min-', '-raw-', $js_h_url ); }
+		echo "\n"."<script type='text/javascript' src='".$js_h_url."'></script>"."\n";
+		}
+	}
+function rshcp_inspect_scripts( $head_scripts = NULL ) {
+	global $rshcp_js_run,$wp_scripts,$rshcp_js_h_null,$rshcp_js_null;
+	if ( !empty( $rshcp_js_run ) ) { return; }
 	$slug 	= rshcp_get_slug();
 	$url 	= rshcp_get_url();
 	$domain	= rshcp_get_domain( $url );
-	$raw_slug = 'rsm-raw-js-'.$slug;
-	$min_slug = 'rsm-min-js-'.$slug;
+	$h		= !empty( $head_scripts ) ? 'h' : '';
+	$raw_slug = 'rsm-raw-js-'.$h.$slug;
+	$min_slug = 'rsm-min-js-'.$h.$slug;
 	$raw_file_slug = $raw_slug.'.js';
 	$min_file_slug = $min_slug.'.js';
 	$raw_js_file = RSHCP_JS_PATH.$raw_file_slug;
 	$min_js_file = RSHCP_JS_PATH.$min_file_slug;
-	global $wp_scripts;
 	$script_handles = array();
 	$script_srcs 	= array();
+	//$deps 		= array(); // TO DO
 	$combined_js 	= array();
 	$http_pref		= rshcp_is_https() ? 'https://' : 'http://';
-	if ( is_object( $wp_scripts ) ) {
-		foreach( $wp_scripts->queue as $handle ) {
-			$script_src			= $script_src_path = $wp_scripts->registered[$handle]->src;
+	if ( empty( $head_scripts ) && defined( 'WPCF7_VERSION' ) && wp_script_is( 'jquery-form', 'enqueued' ) ) {
+		$handle				= 'jquery-form';
+		$script_src			= $script_src_path = WPCF7_PLUGIN_URL.'/includes/js/jquery.form.min.js';
+		$script_domain		= $domain;
+		$script_src_rev		= rshcp_fix_url( $script_src, TRUE, TRUE, TRUE );
+		if ( strpos( $script_src_path, '//' ) === 0 ) { $script_src_path = str_replace( '//', $http_pref, $script_src_path ); }
+		$script_src_path	= str_replace( RSMP_CONTENT_DIR_URL, RSMP_CONTENT_DIR_PATH, $script_src_path );
+		$js_buffer			= file_get_contents( $script_src_path );
+		if ( !empty( $js_buffer ) ) {
+			$c = '';
+			$_wpcf7 = array( 'loaderUrl' => wpcf7_ajax_loader(), 'sending' => __( 'Sending ...', 'contact-form-7' ) ); 
+			if ( defined( 'WP_CACHE' ) && WP_CACHE ) { $_wpcf7['cached'] = 1; $c = ',"cached":"1"'; }
+			if ( wpcf7_support_html5_fallback() ) { $_wpcf7['jqueryUi'] = 1; }
+			$js_buffer			.= "\n".'var _wpcf7 = {"loaderUrl":"'.str_replace( '/', '\/', WPCF7_PLUGIN_URL ).'\/images\/ajax-loader.gif","sending":"'.__( 'Sending ...', 'contact-form-7' ).'"'.$c.'};'."\n";
+			$script_handles[]	 = $handle;
+			$script_srcs[]		 = $script_src;
+			$combined_js[] 		 = $js_buffer;
+			}
+		unset ( $js_buffer );
+		wp_dequeue_script( $handle );
+		wp_deregister_script( $handle );
+		wp_register_script( $handle, NULL, FALSE, NULL, TRUE);
+		wp_enqueue_script( $handle );
+		}
+	if ( !empty( $head_scripts ) ) {
+		foreach( $head_scripts as $handle => $a ) {
+			$script_src			= $script_src_path = $a['src'];
 			$script_domain		= rshcp_get_domain( $script_src );
-			if( empty( $script_src ) || $handle == $min_slug || $handle == 'contact-form-7' || $script_domain != $domain ) { continue; }
+			if( empty( $script_src ) || $handle == $min_slug || $script_domain != $domain ) { continue; }
 			$script_src_rev		= rshcp_fix_url( $script_src, TRUE, TRUE, TRUE );
 			if ( strpos( $script_src_rev, 'sj.' ) !== 0 ) { continue; } // Not JS
 			if ( strpos( $script_src_path, '//' ) === 0 ) { $script_src_path = str_replace( '//', $http_pref, $script_src_path ); }
@@ -358,7 +404,50 @@ function rshcp_inspect_scripts() {
 			wp_dequeue_script( $handle );
 			wp_deregister_script( $handle );
 			}
+		if ( !empty( $combined_js ) ) {
+			$rshcp_js_h_null = FALSE;
+			unset( $head_scripts );
+			remove_action( 'rshcp_inspect_scripts_head', 'rshcp_inspect_scripts' );
+			}
 		}
+	elseif ( !empty( $wp_scripts ) && is_object( $wp_scripts ) ) {
+		$rshcp_js_h_null = TRUE;
+		$head_scripts = array();
+		foreach( $wp_scripts->queue as $handle ) {
+			$script_src			= $script_src_path = $wp_scripts->registered[$handle]->src;
+			//$script_deps 		= (array)$wp_scripts->registered[$handle]->deps; // TO DO
+			$script_domain		= rshcp_get_domain( $script_src );
+			if( empty( $script_src ) || $handle == $min_slug || $script_domain != $domain ) { continue; }
+			$script_src_rev		= rshcp_fix_url( $script_src, TRUE, TRUE, TRUE );
+			if ( strpos( $script_src_rev, 'sj.' ) !== 0 ) { continue; } // Not JS
+			if ( strpos( $script_src_path, '//' ) === 0 ) { $script_src_path = str_replace( '//', $http_pref, $script_src_path ); }
+			$script_src_path	= str_replace( RSMP_CONTENT_DIR_URL, RSMP_CONTENT_DIR_PATH, $script_src_path );
+			$js_buffer			= file_get_contents( $script_src_path );
+			if ( empty( $js_buffer ) ) { continue; }
+			/***
+			* Helps with compatibility when async and defer are being used
+			* $js_buffer			= str_replace( array( '(function($)', '( function( $ )', 'jQuery(document).readyjQuery(document).ready(function($)' ), 'jQuery(document).ready(function($)', $js_buffer );
+			* $js_buffer			= str_replace( array( '(jQuery)', '( jQuery )', '(jquery)', '( jquery )' ), '', $js_buffer );
+			***/
+			$script_handles[] 	= $handle;
+			$script_srcs[] 		= $script_src;
+			$combined_js[] 		= $js_buffer;
+			unset ( $js_buffer );
+			wp_dequeue_script( $handle );
+			wp_deregister_script( $handle );
+			}
+		if ( !rshcp_is_login_page() && wp_script_is( 'jquery', 'enqueued' ) ) {
+			$hs_rev = array_reverse( $head_scripts );
+			$hs_rev['jquery-migrate'] = array( 'handle' => 'jquery-migrate', 'src' => RSMP_SITE_URL.'/wp-includes/js/jquery/jquery-migrate.min.js' );
+			$hs_rev['jquery-core'] = array( 'handle' => 'jquery-core', 'src' => RSMP_SITE_URL.'/wp-includes/js/jquery/jquery.js' );
+			$head_scripts = array_reverse( $hs_rev );
+			wp_dequeue_script( 'jquery' );
+			wp_deregister_script( 'jquery' );
+			wp_register_script( 'jquery', NULL, FALSE, NULL, TRUE);
+			wp_enqueue_script( 'jquery' );
+			}
+		if( !empty( $head_scripts ) ) { add_action( 'rshcp_inspect_scripts_head', 'rshcp_inspect_scripts', 1 ); }
+		} else { $rshcp_js_null = TRUE; return; }
 	$combined_js_contents_raw	= implode( "\n", $combined_js );
 	$combined_js_contents_len	= rshcp_strlen( $combined_js_contents_raw );
 	$combined_js_contents		= rshcp_simple_minifier_js( $combined_js_contents_raw );
@@ -378,9 +467,13 @@ function rshcp_inspect_scripts() {
 			rshcp_write_cache_file( $min_js_file, $combined_js_contents );
 			}
 		}
-	else { global $rshcp_js_null; $rshcp_js_null = TRUE; }
+	else { $rshcp_js_null = TRUE; }
+	if( !empty( $head_scripts ) ) { do_action( 'rshcp_inspect_scripts_head', $head_scripts ); }
+	$rshcp_js_run = TRUE;
 	}
 function rshcp_inspect_styles() {
+	global $rshcp_css_run,$wp_styles,$rshcp_css_null;
+	if ( !empty( $rshcp_css_run ) ) { return; }
 	$slug			= rshcp_get_slug();
 	$url			= rshcp_get_url();
 	$domain			= rshcp_get_domain( $url );
@@ -390,14 +483,15 @@ function rshcp_inspect_styles() {
 	$min_file_slug	= $min_slug.'.css';
 	$raw_css_file	= RSHCP_CSS_PATH.$raw_file_slug;
 	$min_css_file	= RSHCP_CSS_PATH.$min_file_slug;
-	global $wp_styles;
 	$style_handles 	= array();
 	$style_srcs 	= array();
+	//$deps 		= array(); // TO DO
 	$combined_css 	= array();
 	$http_pref		= rshcp_is_https() ? 'https://' : 'http://';
 	if ( is_object( $wp_styles ) ) {
 		foreach( $wp_styles->queue as $handle ) {
 			$style_src			= $style_src_path = $wp_styles->registered[$handle]->src;
+			//$style_deps 		= (array)$wp_styles->registered[$handle]->deps; // TO DO
 			$style_domain		= rshcp_get_domain( $style_src );
 			if( empty( $style_src ) || $handle == $min_slug || $style_domain != $domain ) { continue; } // || strpos( $style_src, '/themes/' )
 			$style_src_rev		= rshcp_fix_url( $style_src, TRUE, TRUE, TRUE );
@@ -442,7 +536,7 @@ function rshcp_inspect_styles() {
 			wp_dequeue_style( $handle );
 			wp_deregister_style( $handle );
 			}
-		}
+		} else { return; }
 	$combined_css_contents_raw	= implode( "\n", $combined_css );
 	$combined_css_contents_len	= rshcp_strlen( $combined_css_contents_raw );
 	$combined_css_contents		= rshcp_simple_minifier_css( $combined_css_contents_raw );
@@ -462,7 +556,8 @@ function rshcp_inspect_styles() {
 			rshcp_write_cache_file( $min_css_file, $combined_css_contents );
 			}
 		}
-	else { global $rshcp_css_null; $rshcp_css_null = TRUE; }
+	else { $rshcp_css_null = TRUE; }
+	$rshcp_css_run = TRUE;
 	}
 // SPEED UP WORDPRESS - END
 
@@ -521,7 +616,7 @@ function rshcp_fix_url( $url, $rem_frag = FALSE, $rem_query = FALSE, $rev = FALS
 	}
 function rshcp_get_url() {
 	$url  = rshcp_is_https() ? 'https://' : 'http://';
-	$url .= RSMP_SERVER_NAME.$_SERVER['REQUEST_URI'];
+	$url .= RSHCP_SERVER_NAME.$_SERVER['REQUEST_URI'];
 	return $url;
 	}
 function rshcp_is_https() {
@@ -558,13 +653,40 @@ function rshcp_append_log_data( $str = NULL, $rsds_only = FALSE ) {
 	/*
 	* Example:
 	* rshcp_append_log_data( "\n".'$rshcp_example_variable: "'.$rshcp_example_variable.'" Line: '.__LINE__.' | '.__FUNCTION__.' | MEM USED: ' . rshcp_format_bytes( memory_get_usage() ), TRUE );
+	* rshcp_append_log_data( "\n".'$rshcp_example_variable: "'.$rshcp_example_variable.'" Line: '.__LINE__.' | '.__FUNCTION__.' | '.rshcp_get_url().' | MEM USED: ' . rshcp_format_bytes( memory_get_usage() ), TRUE );
 	* rshcp_append_log_data( "\n".'[A]$rshcp_example_array_var: "'.serialize($rshcp_example_array_var).'" Line: '.__LINE__.' | '.__FUNCTION__.' | MEM USED: ' . rshcp_format_bytes( memory_get_usage() ), TRUE );
 	*/
-	if ( WP_DEBUG === TRUE && RSHCP_DEBUG === TRUE ) {
-		if ( !empty( $rsds_only ) && strpos( RSMP_SERVER_NAME_REV, RSMP_DEBUG_SERVER_NAME_REV ) !== 0 ) { return; }
+	if ( TRUE === WP_DEBUG && TRUE === RSHCP_DEBUG ) {
+		if ( !empty( $rsds_only ) && strpos( RSHCP_SERVER_NAME_REV, RSMP_DEBUG_SERVER_NAME_REV ) !== 0 ) { return; }
 		$rshcp_log_str = 'RSHCP DEBUG: '.str_replace("\n", "", $str);
 		error_log( $rshcp_log_str, 0 ); // Logs to debug.log
 		}
+	}
+function rshcp_microtime() {
+	return microtime( TRUE );
+	}
+function rshcp_timer( $start = NULL, $end = NULL, $show_seconds = FALSE, $precision = 8, $no_format = FALSE, $raw = FALSE ) {
+	/***
+	* $precision will default to 8 but can be set to anything - 1,2,3,4,5,6,etc.
+	* Use $no_format when clean numbers are needed for calculations. International formatting throws a wrench into things.
+	***/
+	if ( empty( $start ) || empty( $end ) ) { $start = $end = 0; }
+	$total_time = $end - $start;
+	if ( empty( $no_format ) ) {
+		$total_time_for = rshcp_number_format( $total_time, $precision );
+		if ( !empty( $show_seconds ) ) { $total_time_for .= ' seconds'; }
+		}
+	elseif ( empty( $raw ) ) {
+		$total_time_for = number_format( $total_time, $precision );
+		} 
+	else { $total_time_for = $total_time; }
+	return $total_time_for;
+	}
+function rshcp_number_format( $number, $precision = NULL ) {
+	/* $precision will default to NULL but can be set to anything - 1,2,3,4,5,6,etc. */
+	if ( function_exists( 'number_format_i18n' ) ) { $number_for = number_format_i18n( $number, $precision ); }
+	else { $number_for = number_format( $number, $precision ); }
+	return $number_for;
 	}
 function rshcp_format_bytes( $size, $precision = 2 ) {
 	if ( !is_numeric($size) ) { return $size; }
@@ -586,7 +708,10 @@ function rshcp_md5( $string ) {
 	return $hash;
 	}
 function rshcp_is_login_page() {
-    return in_array( $GLOBALS['pagenow'], array( 'wp-login.php', 'wp-register.php' ) );
+	global $pagenow;
+    if ( $pagenow === 'wp-login.php' || $pagenow === 'wp-register.php' ) { return TRUE; }
+    if ( strpos( $_SERVER['PHP_SELF'], '/wp-login.php' ) !== FALSE || strpos( $_SERVER['PHP_SELF'], '/wp-register.php' ) !== FALSE ) { return TRUE; }
+    return FALSE;
 	}
 // Standard Functions - END
 
@@ -647,7 +772,7 @@ function rshcp_check_version() {
 		$admin_notices = get_option('rshcp_admin_notices');
 		if ( !empty( $admin_notices ) ) { add_action( 'admin_notices', 'rshcp_admin_notices' ); }
 		/* Make sure user has minimum required WordPress version, in order to prevent issues */
-		$rshcp_wp_version = RSMP_WP_VERSION;
+		$rshcp_wp_version = RSHCP_WP_VERSION;
 		if ( version_compare( $rshcp_wp_version, RSHCP_REQUIRED_WP_VERSION, '<' ) ) {
 			deactivate_plugins( RSHCP_PLUGIN_BASENAME );
 			$notice_text = sprintf( __( 'Plugin deactivated. WordPress Version %s required. Please upgrade WordPress to the latest version.', RSHCP_PLUGIN_NAME ), RSHCP_REQUIRED_WP_VERSION );
@@ -709,7 +834,7 @@ function rshcp_deactivation() {
 					$file = $rshcp_dirs[$d].$filename; $filerev = strrev($file); $drev = strrev($d);
 					if ( is_file( $file ) ){
 						if ( strpos( $filerev, $drev.'.' ) !== 0 ) { continue; }
-						@chmod( $file, 0775 );
+						@chmod( $file, 0775 ); 
 						@unlink( $file );
 						if ( file_exists( $file ) ) { @chmod( $file, 0644 ); }
 						}
@@ -719,5 +844,14 @@ function rshcp_deactivation() {
 		}
 	}
 // Admin Functions - END
+
+/* BENCHMARK - END */
+/*
+$end_time = rshcp_microtime();
+$total_time = rshcp_timer( $start_time, $end_time, FALSE, 6, TRUE );
+rshcp_append_log_data( "\n".'$start_time: "'.$start_time.'" Line: '.__LINE__.' | '.__FUNCTION__.' | '.rshcp_get_url().' | MEM USED: ' . rshcp_format_bytes( memory_get_usage() ), TRUE );
+rshcp_append_log_data( "\n".'$end_time: "'.$end_time.'" Line: '.__LINE__.' | '.__FUNCTION__.' | '.rshcp_get_url().' | MEM USED: ' . rshcp_format_bytes( memory_get_usage() ), TRUE );
+rshcp_append_log_data( "\n".'$total_time: "'.$total_time.'" Line: '.__LINE__.' | '.__FUNCTION__.' | '.rshcp_get_url().' | MEM USED: ' . rshcp_format_bytes( memory_get_usage() ), TRUE );
+*/
 
 // PLUGIN - END
